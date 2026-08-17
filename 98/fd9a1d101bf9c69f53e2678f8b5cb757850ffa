@@ -1,0 +1,71 @@
+src/main/scheduler/cron-scheduler.ts
+  s_9f92f64c7e3feb::t_b104b688ba774b 1-84
+src/main/automation/runtime/storage-adapter.ts
+  s_9f92f64c7e3feb::t_00d180bf5216bf 1-26
+src/main/chrome/cdp-client.ts
+  s_9f92f64c7e3feb::t_62d34f5fd20fed 1-84
+src/main/scheduler/task-runner.ts
+  s_9f92f64c7e3feb::t_0f1f8878e00db5 1-109
+src/main/automation/runtime/network-adapter.ts
+  s_9f92f64c7e3feb::t_f5fca2802540c6 1-39
+src/renderer/src/pages/Execution/index.tsx
+  s_9f92f64c7e3feb::t_c83637ff303b80 1-31
+src/main/ipc-handlers.ts
+  s_9f92f64c7e3feb::t_19f480c51d4bef 1-43
+src/main/automation/runtime/automation-context.ts
+  s_9f92f64c7e3feb::t_316ad678061e1a 1-38
+src/main/chrome/manager.ts
+  s_9f92f64c7e3feb::t_118dfe1cd171c3 1-186
+src/renderer/src/pages/Accounts/index.tsx
+  s_9f92f64c7e3feb::t_d729bf0cb544c4 1-33
+package.json
+  s_9f92f64c7e3feb::t_30d08d340153a9 28
+src/main/automation/actions/index.ts
+  s_9f92f64c7e3feb::t_77e5d8ce2ea270 1-32
+src/main/store/database.ts
+  s_9f92f64c7e3feb::t_f2b2c70daab717 1-179
+src/renderer/src/App.tsx
+  s_9f92f64c7e3feb::t_0e6c8a169b4b6c 4-50,54,61-85
+src/main/automation/taobao/login-detector.ts
+  s_9f92f64c7e3feb::t_a1362e7255584e 1-27
+src/main/automation/taobao/live-control.ts
+  s_9f92f64c7e3feb::t_da696ba8d2f7a9 1-39
+src/main/scheduler/task-executor.ts
+  s_9f92f64c7e3feb::t_f8104a3a964fd7 1-111
+src/main/index.ts
+  s_9f92f64c7e3feb::t_7b45db7465b2d4 1,5-9,45-54,56-58,62,76,96-97
+src/main/chrome/profile.ts
+  s_9f92f64c7e3feb::t_09d9643491aa15 1-71
+src/renderer/src/pages/Tasks/index.tsx
+  s_9f92f64c7e3feb::t_31c4171b7afa1c 1-32
+src/main/store/accounts.ts
+  s_9f92f64c7e3feb::t_2421c0942b685e 1-100
+src/main/automation/taobao/account-detector.ts
+  s_9f92f64c7e3feb::t_9e5fa022202adf 1-37
+src/renderer/src/pages/Settings/index.tsx
+  s_9f92f64c7e3feb::t_7ec741b0bd8aac 1-34
+src/main/automation/runtime/page-adapter.ts
+  s_9f92f64c7e3feb::t_70c3377d053b87 1-63
+src/main/store/logs.ts
+  s_9f92f64c7e3feb::t_b4f2aaa140805e 1-147
+src/shared/types.ts
+  s_9f92f64c7e3feb::t_352ab0746a1bb5 1-6,8-13,20-38,48,52-89,93,103-116,124,131-135,137,139,144-151,168-189,192-319,321-323,326-336,339-361,363-367,374-422
+src/main/store/tasks.ts
+  s_9f92f64c7e3feb::t_dd776fbe38f6c4 1-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "98fd9a1d101bf9c69f53e2678f8b5cb757850ffa",
+  "prompts": {},
+  "sessions": {
+    "s_9f92f64c7e3feb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ff0320659ffeJjQvGbCczUJwaD",
+        "model": "mimo-v2.5"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
