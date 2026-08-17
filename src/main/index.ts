@@ -1,7 +1,12 @@
-import { app, BrowserWindow, shell, ipcMain } from 'electron'
+import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 import logger from './logger'
+import { initializeDatabase, closeDatabase } from './store/database'
+import { registerIpcHandlers } from './ipc-handlers'
+import { scanStaleChromeProcesses } from './chrome/manager'
+import { clearAllAccountLocks } from './scheduler/task-runner'
+import { stopAllSchedules } from './scheduler/cron-scheduler'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -37,23 +42,24 @@ function createWindow(): void {
   }
 }
 
-// IPC 处理器
-function setupIpcHandlers(): void {
-  ipcMain.handle('get-version', () => {
-    return app.getVersion()
-  })
+/**
+ * 应用启动
+ */
+function bootstrap(): void {
+  // 6.3 应用启动时扫描上一次异常退出留下的运行记录
+  const staleChrome = scanStaleChromeProcesses()
+  if (staleChrome.length > 0) {
+    logger.warn({ count: staleChrome.length }, 'Found stale Chrome processes')
+  }
+  clearAllAccountLocks()
 
-  ipcMain.handle('get-app-info', () => {
-    return {
-      version: app.getVersion(),
-      electron: process.versions.electron,
-      node: process.versions.node,
-      chrome: process.versions.chrome
-    }
-  })
+  // 数据库初始化
+  initializeDatabase()
+  registerIpcHandlers()
 }
 
 // 单实例锁
+// @see 文档 10.3 应用退出和系统能力
 const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
@@ -67,7 +73,7 @@ if (!gotTheLock) {
   })
 
   app.whenReady().then(() => {
-    setupIpcHandlers()
+    bootstrap()
     createWindow()
 
     app.on('activate', () => {
@@ -87,4 +93,6 @@ app.on('window-all-closed', () => {
 // 优雅退出
 app.on('before-quit', () => {
   logger.info('Application is quitting...')
+  stopAllSchedules()
+  closeDatabase()
 })
