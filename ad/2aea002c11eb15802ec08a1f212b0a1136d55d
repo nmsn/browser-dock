@@ -1,0 +1,100 @@
+tsconfig.json
+  s_9f92f64c7e3feb::t_56458b6284ec1d 1-11
+src/main/config.ts
+  s_9f92f64c7e3feb::t_ca5bde85783a47 1-32
+tsconfig.web.json
+  s_9f92f64c7e3feb::t_56458b6284ec1d 1-24
+src/renderer/src/components/ui/button.tsx
+  s_9f92f64c7e3feb::t_58017dcbcd1daa 1-52
+electron.vite.config.ts
+  s_9f92f64c7e3feb::t_56458b6284ec1d 1-3,5-31,37-41
+  s_9f92f64c7e3feb::t_93bd237a2765fc 4,32-36
+.npmrc
+  s_9f92f64c7e3feb::t_a022ae507d5fed 1-4
+src/renderer/src/components/ui/card.tsx
+  s_9f92f64c7e3feb::t_1728df4ac683d1 1-50
+components.json
+  s_9f92f64c7e3feb::t_d212c9f61d0048 1-19
+src/main/logger.ts
+  s_9f92f64c7e3feb::t_59e845b13b3010 1-37
+src/renderer/src/lib/utils.ts
+  s_9f92f64c7e3feb::t_a65a00f1ee91a9 1-6
+README.md
+  s_9f92f64c7e3feb::t_a22b572d27059e 1-33
+package.json
+  s_9f92f64c7e3feb::t_fd3cd3b7f2d184 20
+  s_9f92f64c7e3feb::t_af74c5a857ac03 18
+  s_9f92f64c7e3feb::t_a7fbdd40f0af9b 32,41-42,49-53
+  s_9f92f64c7e3feb::t_3a884bc166ea8c 33,35
+  s_9f92f64c7e3feb::t_1013608915c934 22
+  s_9f92f64c7e3feb::t_a9571daf1a0dc7 26-27
+  s_9f92f64c7e3feb::t_56458b6284ec1d 1-17,29-31,34,36-40,43-48,54-57
+  s_9f92f64c7e3feb::t_d6a7621d75d9d3 19,21,23-25,28
+pnpm-workspace.yaml
+  s_9f92f64c7e3feb::t_d6a7621d75d9d3 2
+  s_9f92f64c7e3feb::t_470094a3e3253c 3-4
+  s_9f92f64c7e3feb::t_c3b8841113cbc3 1
+src/renderer/src/App.tsx
+  s_9f92f64c7e3feb::t_6903f22201d480 2-3,20-28
+  s_9f92f64c7e3feb::t_56458b6284ec1d 1,4-19,29-34
+src/renderer/index.html
+  s_9f92f64c7e3feb::t_56458b6284ec1d 1-12
+src/preload/index.ts
+  s_9f92f64c7e3feb::t_56458b6284ec1d 1-13
+electron-builder.yml
+  s_9f92f64c7e3feb::t_eea14ee3f89d5f 21-36
+  s_9f92f64c7e3feb::t_56458b6284ec1d 1-20
+src/main/index.ts
+  s_9f92f64c7e3feb::t_c7748dacba856c 1,4,40-44,46-51,54-79,85-89
+  s_9f92f64c7e3feb::t_56458b6284ec1d 2-3,5-39,45,52-53,80-84,90
+src/main/secrets/keyring.ts
+  s_9f92f64c7e3feb::t_8470ea50c53037 1-53
+docs/project-architecture-design.md
+  s_9f92f64c7e3feb::t_8c93989f63e0a0 111-140
+  s_9f92f64c7e3feb::t_b226a3a54b770e 146
+  s_9f92f64c7e3feb::t_da5d14344f7ffd 71,80,109,430,489,532,585,640,703,744,787,819,859,894,918,933-992
+  s_9f92f64c7e3feb::t_1deae61e543cb7 68-70
+  s_9f92f64c7e3feb::t_6760149dde9a81 72-74,77-79
+  s_9f92f64c7e3feb::t_e9f81d57b76294 81-83,106-108
+  s_9f92f64c7e3feb::t_9e0c004a011858 110
+  s_9f92f64c7e3feb::t_a79094eaf5f5fc 141-145
+  s_9f92f64c7e3feb::t_b0b12a18aefaf5 147-149,427-429
+  s_9f92f64c7e3feb::t_92726ec32e55f3 431-433,486-488
+  s_9f92f64c7e3feb::t_8fb4039903b9da 490-492,529-531
+  s_9f92f64c7e3feb::t_5c2e63740b41f6 533-535,582-584
+  s_9f92f64c7e3feb::t_5294848cbb2955 586-588,637-639
+  s_9f92f64c7e3feb::t_df3e4fae60ccec 641-643,700-702
+  s_9f92f64c7e3feb::t_352f5cf71518fe 704-706,741-743
+  s_9f92f64c7e3feb::t_b1b9837afb83f7 745-747,784-786
+  s_9f92f64c7e3feb::t_3f966570bad246 788-790,816-818
+  s_9f92f64c7e3feb::t_97a6ce94aead8c 820-822,856-858
+  s_9f92f64c7e3feb::t_a04d3abfe9b112 860-862,891-893
+  s_9f92f64c7e3feb::t_3ac0ad1fb85dbf 895-897,915-917
+  s_9f92f64c7e3feb::t_95baa0b30dc8bc 919-921,930-932
+src/shared/types.ts
+  s_9f92f64c7e3feb::t_03f5904dcdbcb6 1-114
+.gitignore
+  s_9f92f64c7e3feb::t_d46756375bc065 1-60
+src/renderer/src/main.tsx
+  s_9f92f64c7e3feb::t_56458b6284ec1d 1-10
+tsconfig.node.json
+  s_9f92f64c7e3feb::t_56458b6284ec1d 1-18
+src/renderer/src/styles/index.css
+  s_9f92f64c7e3feb::t_56458b6284ec1d 1-126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "ad2aea002c11eb15802ec08a1f212b0a1136d55d",
+  "prompts": {},
+  "sessions": {
+    "s_9f92f64c7e3feb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ff0320659ffeJjQvGbCczUJwaD",
+        "model": "mimo-v2.5"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
