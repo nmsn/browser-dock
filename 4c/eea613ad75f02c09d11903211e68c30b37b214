@@ -1,0 +1,68 @@
+src/main/scheduler/task-executor.ts
+  s_9f92f64c7e3feb::t_cc7e154bb18967 16
+  s_9f92f64c7e3feb::t_338c2e22c413f7 145
+  s_9f92f64c7e3feb::t_47f34580e9b3c6 129
+  s_9f92f64c7e3feb::t_a298aa6e9ed9b6 113-124
+  s_9f92f64c7e3feb::t_222bda4476ed2e 67,69,73-74
+  s_9f92f64c7e3feb::t_dc8231376ca5ee 17
+  s_9f92f64c7e3feb::t_4e3a5a48e1a187 90-92
+  s_9f92f64c7e3feb::t_97a9a13a1798fc 154
+  s_9f92f64c7e3feb::t_33afaa15a06bb5 232-312
+src/shared/types.ts
+  s_9f92f64c7e3feb::t_aac1832d256be7 426
+  s_9f92f64c7e3feb::t_698449a326498e 427-430
+  s_9f92f64c7e3feb::t_f29d3a83e21554 425
+src/main/ipc-handlers.ts
+  s_9f92f64c7e3feb::t_9c9a0a7e787504 308-313
+  s_9f92f64c7e3feb::t_c5e2e507a4e489 214-219
+  s_9f92f64c7e3feb::t_c98689bee24512 32
+  s_9f92f64c7e3feb::t_51ba334f650b20 30
+  s_9f92f64c7e3feb::t_dec0fb518b2059 300-307
+  s_9f92f64c7e3feb::t_30dfdacf4b4b32 31
+src/renderer/src/store/useExecutionStore.ts
+  s_9f92f64c7e3feb::t_5d9c3efac0f66c 23-24
+  s_9f92f64c7e3feb::t_2f04fbf3a0f5d4 52-84
+package.json
+  s_9f92f64c7e3feb::t_88347d4c316809 25
+src/main/cancel-registry.ts
+  s_9f92f64c7e3feb::t_50f092e93123fe 1-36
+src/renderer/src/pages/Schedules/index.tsx
+  s_9f92f64c7e3feb::t_ec3aaffc564ee4 267,284-288
+src/main/log-export.ts
+  s_9f92f64c7e3feb::t_fdd60d91468d6c 1-61
+src/main/scheduler/cron-scheduler.ts
+  s_9f92f64c7e3feb::t_23ea4c655a2871 4
+  s_9f92f64c7e3feb::t_e235ea3a4fda6d 83-91
+  s_9f92f64c7e3feb::t_2832eefaf6e5ca 2
+src/preload/index.ts
+  s_9f92f64c7e3feb::t_e11ef3eee0a5fd 60,64-76
+  s_9f92f64c7e3feb::t_29573f7df6ffbd 61-62
+  s_9f92f64c7e3feb::t_66ee892fded46c 9-11
+  s_9f92f64c7e3feb::t_c069a0245a61d7 63
+src/renderer/src/pages/Execution/index.tsx
+  s_9f92f64c7e3feb::t_c0146bab9932a0 60-71
+  s_9f92f64c7e3feb::t_68054ea36be6ff 2
+  s_9f92f64c7e3feb::t_8c009beca7acc6 183,189,200-215
+  s_9f92f64c7e3feb::t_6de4b08e070f76 1
+  s_9f92f64c7e3feb::t_2d0b60afdf36d2 84-99
+src/main/execution-events.ts
+  s_9f92f64c7e3feb::t_b21244af96ed16 1-30
+pnpm-lock.yaml
+  s_9f92f64c7e3feb::t_ec18c2f939c527 29-31,1454-1457,2061-2064,3940-3943,4604-4605
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "4ceea613ad75f02c09d11903211e68c30b37b214",
+  "prompts": {},
+  "sessions": {
+    "s_9f92f64c7e3feb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ff0320659ffeJjQvGbCczUJwaD",
+        "model": "mimo-v2.5"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
