@@ -520,14 +520,17 @@ export async function startLive(cdpClient: CdpClient, accountId: string): Promis
 
 ### Phase 4：优化完善（持续）
 
-- [ ] 错误重试机制
-- [ ] 脚本权限策略和系统密钥环
-- [ ] 页面变化检测和 DOM 快照
-- [ ] Electron 原生模块打包验证
+- [x] 错误重试机制
+- [ ] 脚本权限策略和系统密钥环（基础密钥环已实现，待加强任务级白名单配置 UI）
+- [x] 页面变化检测和 DOM 快照
+- [x] Electron 原生模块打包验证（macOS arm64/x64 已验证通过）
 - [ ] 多平台安装、升级和数据迁移
-- [ ] 执行结果通知
+- [x] 执行结果通知
 - [ ] 性能优化
-- [ ] 日志导出
+- [x] 日志导出（CSV，过滤敏感信息）
+- [x] 实时执行状态推送（execution:status + execution:log 事件）
+- [x] 任务取消支持（cancel-registry + AbortSignal 传播）
+- [x] 调度下次运行时间显示（cron-parser）
 
 ---
 
@@ -989,4 +992,97 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 | 网络 | `NT_*` | NT_TIMEOUT, NT_DISCONNECTED |
 | 任务 | `TK_*` | TK_TIMEOUT, TK_CANCELLED, TK_MAX_RETRY |
 
-（错误码详细定义在实现各模块时补充）ENDOFAPPEND
+（错误码详细定义在实现各模块时补充）
+
+---
+
+## 十六、当前实现进度（v0.0.1）
+
+> 本节反映代码库实际状态（同步于 commit `5e933ef`，2026-08-19），用于追踪实施进度。文档前面章节为设计规范，本节为实现快照。
+
+### 16.1 Phase 完成情况
+
+| Phase | 状态 | 完成项 |
+|-------|------|--------|
+| **Phase 1** 基础框架 | ✅ 100% | Electron 初始化 / SQLite + 迁移 / 备份 / Chrome 管理 / Profile 锁 / 账号管理 UI / 登录流程 |
+| **Phase 2** 自动化引擎 | ✅ 100% | CDP 客户端 / 基础操作封装 / AutomationContext / 登录状态 + 账号身份检测 / 任务管理 UI |
+| **Phase 3** 定时调度 | ✅ 100% | Cron 调度器 / 多账号并行 / 账号锁 / 状态机 / 超时取消重试 / 执行日志 / 执行监控 UI |
+| **Phase 4** 优化完善 | 🟡 50% | 重试 ✅、DOM 快照 ✅、原生打包验证 ✅、通知 ✅、CSV 导出 ✅、实时推送 ✅、取消 ✅、下次运行时间 ✅；脚本权限 UI 待做、多平台 待做、性能 待做 |
+
+### 16.2 关键模块映射（设计规范 → 实际代码）
+
+| 文档章节 | 实现文件 |
+|---------|---------|
+| 2.3 目录结构 | `src/main/`（含 store / chrome / scheduler / automation / secrets）、`src/preload/`、`src/renderer/`、`src/shared/`` |
+| 2.5 数据库设计 | `src/main/store/database.ts`（accounts / tasks / schedules / execution_logs / account_locks / page_diagnostics）+ `schema_migrations`（v1, v2） |
+| 2.6.1 账号登录流程 | `src/main/automation/taobao/login.ts` + `src/main/automation/taobao/login-detector.ts` |
+| 5.2 调度流程 | `src/main/scheduler/service.ts`（`handleCronTriggered` + `runTaskNow`） |
+| 6.2 启动流程 | `src/main/chrome/manager.ts`（动态分配端口 + 等待 CDP + 关闭清理） |
+| 7.1 运行时结构 | `src/main/automation/{runtime,actions,taobao}/` 完整实现 |
+| 8.3 重试原则 | `src/main/scheduler/task-executor.ts`（`runWithRetry` + `isRetryableError` + 退避 + AbortSignal） |
+| 9.1 存储要求 | `src/main/secrets/keyring.ts`（@napi-rs/keyring）+ `src/main/store/logs.ts`（不带敏感字段） |
+| 9.3 删除/备份 | `src/main/store/backup.ts`（VACUUM INTO + 保留 7 份） + `src/main/log-export.ts`（CSV 仅 SAFE_FIELDS） |
+| 10.1 安全基线 | `contextIsolation: true, nodeIntegration: false, sandbox: false` + 入参校验 + 白名单 IPC |
+| 10.3 应用退出 | `app.requestSingleInstanceLock()` + `before-quit` 关闭清理 |
+| 11.2 页面变更检测 | `src/main/store/diagnostics.ts`（page_diagnostics 表）+ task-executor 自动捕获 DOM + 截图 |
+| 11.3 UI 状态 | 执行监控页（账号/任务/状态/耗时/错误/取消/诊断） |
+| 12.2 集成测试 | `scripts/test-chrome-cdp.mjs` + `scripts/test-executor.cjs`（SMOKE PASS） |
+| 13.2 数据库迁移 | `applyMigrations` 自动 + pre-migration backup（VACUUM INTO） |
+
+### 16.3 端到端验证状态
+
+| 验证项 | 命令 | 结果 |
+|-------|------|------|
+| Chrome 启动 + CDP 连接 + 导航 | `pnpm test:chrome-cdp` | ✅ PASS |
+| 任务执行器完整链路（账号→任务→Chrome→CDP→沙箱→日志→锁释放） | `pnpm test:executor`（`BROWSER_DOCK_SMOKE=1`） | ✅ SMOKE PASS |
+| 多账号并行（2 账号并发） | 同上 smoke 增加步骤 | ✅ 2/2 |
+| pnpm build（开发产物） | `pnpm build` | ✅ 1979 modules |
+| macOS 打包 arm64 + x64 | `pnpm build:mac` | ✅ dmg + zip 均生成 |
+| 原生模块打包（better-sqlite3 + @napi-rs/keyring） | 验证 `app.asar.unpacked/` | ✅ 正确 unpack |
+
+### 16.4 真实修复的 Bug（集成测试发现）
+
+| Bug | 根因 | 修复 |
+|-----|------|------|
+| `electron-builder` `ReadWrite` undefined | app-builder-lib 26 用 `@electron/get v5` 的 `ElectronDownloadCacheMode` 枚举，但声明依赖 `^3.0.0` | `pnpm-workspace.yaml` 加 `overrides: '@electron/get': '^5.1.0'` |
+| Electron zip 下载失败（macOS 上 Electron 官方源被墙） | 默认官方源 | `electron-builder.yml` 加 `electronDownload.mirror: npmmirror` |
+| DMG 构建 `fetchd` 失败（dmgbuild 工具下载被墙） | 默认 GitHub release 源 | `ELECTRON_BUILDER_BINARIES_MIRROR` 环境变量（写入 `build:mac` script） |
+| `CDP_TIMEOUT` Chrome 启动 10 秒后超时 | debug 端口固定 9222 被其他 Chrome 占用 | `chrome/manager.ts` 改为 `allocateDebugPort()` 动态分配空闲端口 |
+| browser target WS 连接 404 | 硬编码 `ws://.../devtools/browser` 缺 UUID | `createCdpClient` 从 `/json/version` 动态获取 `webSocketDebuggerUrl` |
+| IPv6 localhost 解析问题 | Chrome 返回 `ws://localhost:...` 时 ws 库走 IPv6 | `normalizeWsUrl` 统一为 `ws://127.0.0.1:port/...` |
+| 单实例锁被占导致 smoke 退出 | 之前 `pnpm dev` 留有后台 Electron 进程 | smoke 前清理（执行时先 kill） |
+
+### 16.5 当前 IPC 接口清单（renderer ↔ main）
+
+| 域 | 方法 | 用途 |
+|----|------|------|
+| 应用 | `getVersion` / `getAppInfo` | 版本和运行时信息 |
+| 账号 | `accounts:list/create/update/delete` | 账号 CRUD |
+| 浏览器 | `browser:start/stop/get-runtime/list-runtimes` | Chrome 生命周期 |
+| 登录 | `login:start/wait-result` | 登录流程 |
+| 任务 | `tasks:list/create/update/delete` | 任务 CRUD |
+| 调度 | `schedules:list/create/update/delete` | 调度 CRUD（含 cron 注册/注销） |
+| 执行 | `execution:run/list/cancel/export-csv` | 任务执行与日志 |
+| 诊断 | `diagnostics:list/get` | 失败页面诊断查看 |
+| 密钥环 | `keyring:set/get/delete` | 敏感信息存储 |
+| 事件 | `execution:status` / `execution:log` | 主进程 → renderer 实时推送 |
+
+### 16.6 后续开发路线图
+
+| 优先级 | 项目 | 文档章节 |
+|-------|------|---------|
+| 高 | 应用设置页（Chrome 路径、并发上限、日志保留、托盘） | 2.3.1 / 10.3 |
+| 高 | 多平台打包（Windows squirrel + Linux deb/rpm） | 10.2 |
+| 中 | 脚本权限策略增强（任务级白名单 UI） | 9.2 |
+| 中 | 升级 / 数据迁移（备份恢复界面） | 13.2 |
+| 中 | 性能优化（启动时间、Chrome 池化、数据库索引） | Phase 4 |
+| 低 | 设置中增加 Mihomo 代理管理 | 2.6.2 |
+| 低 | 镜像 / 截图 / DOM 快照保留期配置 | 9.3 |
+
+### 16.7 已知限制
+
+- 仅 macOS 打包通过（Windows / Linux 待扩展 targets）
+- 无代码签名 / 公证（首启需手动「右键打开」）
+- Chrome `--disable-background-timer-throttling` 仅降低节流，不解决睡眠场景（文档 5.1 / 10.3 明确）
+- 未实现低频巡检（文档 11.2 第二段），用于提前发现页面布局变化
+- 未实现 Mihomo 集成（文档 1.2 提到「完整代理管理」，目前仅支持 `proxyConfig` 字段占位）
