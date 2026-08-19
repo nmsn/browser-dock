@@ -1,0 +1,82 @@
+src/preload/index.ts
+  s_9f92f64c7e3feb::t_ed9b2535b16ec4 19-30
+  s_9f92f64c7e3feb::t_bf3b426dc7cf00 2,4-10,12-18,38
+src/main/store/schedules.ts
+  s_9f92f64c7e3feb::t_582daca8462bf4 1-136
+docs/project-architecture-design.md
+  s_9f92f64c7e3feb::t_b9af61614b1a93 495-501,505
+src/renderer/src/components/ui/badge.tsx
+  s_9f92f64c7e3feb::t_ae73b2f842cd49 1-32
+src/main/store/database.ts
+  s_9f92f64c7e3feb::t_ea009329b6bd0c 64-71
+  s_9f92f64c7e3feb::t_7b7dfa0864d623 4
+src/renderer/src/components/ui/table.tsx
+  s_9f92f64c7e3feb::t_5dee9c50b23ada 1-87
+src/main/ipc-handlers.ts
+  s_9f92f64c7e3feb::t_c55fe8c349b65c 93-152
+  s_9f92f64c7e3feb::t_7ffd970490c2a7 13-15,17
+  s_9f92f64c7e3feb::t_100ec546e389eb 26-37
+  s_9f92f64c7e3feb::t_bd3742300227b7 3-4,7-12,16,48-91
+  s_9f92f64c7e3feb::t_c312a8c88ad1cb 92
+src/renderer/src/components/ui/label.tsx
+  s_9f92f64c7e3feb::t_33584c4797f953 1-18
+pnpm-workspace.yaml
+  s_9f92f64c7e3feb::t_fe5ed086f7e61f 1-5
+  s_9f92f64c7e3feb::t_0c4ccc46827477 6
+src/renderer/src/components/ui/dialog.tsx
+  s_9f92f64c7e3feb::t_14e6af516035a8 1-93,107-114,117-118
+  s_9f92f64c7e3feb::t_bb15dd19e8807b 94-106,115-116
+package.json
+  s_9f92f64c7e3feb::t_7a88a6284a7198 12
+  s_9f92f64c7e3feb::t_86e85df7f4af02 13
+  s_9f92f64c7e3feb::t_13ffaca203521b 19
+src/main/automation/taobao/login.ts
+  s_9f92f64c7e3feb::t_0a6ca3721514e8 1-99
+  s_9f92f64c7e3feb::t_c1b619a36e1b20 100
+src/renderer/src/store/useAccountsStore.ts
+  s_9f92f64c7e3feb::t_bced1e73079db3 1,3-9,11-16,21-22,24,26-33,35-42,44-54,59-63,113-115
+  s_9f92f64c7e3feb::t_efa1480d6fac9f 2,10,17-20,23,25,34,43,55-58,64-112
+src/shared/types.ts
+  s_9f92f64c7e3feb::t_65728ff40df68f 399-408
+  s_9f92f64c7e3feb::t_0de884c5b52abc 376-385,388,393-398
+  s_9f92f64c7e3feb::t_d87c3119327b7f 375
+src/main/store/account-locks.ts
+  s_9f92f64c7e3feb::t_4249241f7b3dde 1-94
+src/renderer/src/pages/Accounts/index.tsx
+  s_9f92f64c7e3feb::t_97f3c89bf23f62 1-3,5-27,32,34-146,150,153-155,164,179-190,193-195,197-200,204-206,209-219,221-227,230-235,243-245,276-282,287
+  s_9f92f64c7e3feb::t_20712049dfa901 148-149,151-152,156-163,165-176,196,220,228-229,236-242,246-275
+src/main/store/backup.ts
+  s_9f92f64c7e3feb::t_2d867b64b7431c 1-79
+scripts/test-chrome-cdp.mjs
+  s_9f92f64c7e3feb::t_45bd27ab832e8d 14,25
+  s_9f92f64c7e3feb::t_fec7b802f4a708 1-13,15-24,26-108
+electron-builder.yml
+  s_9f92f64c7e3feb::t_5a515ce93f8d3b 9-10
+src/main/chrome/cdp-client.ts
+  s_9f92f64c7e3feb::t_26561db6ec7977 75,85-129,132
+  s_9f92f64c7e3feb::t_4e06396b97b303 130-131
+src/main/config.ts
+  s_9f92f64c7e3feb::t_3d315bf539d91f 10-12
+src/renderer/src/components/ui/input.tsx
+  s_9f92f64c7e3feb::t_44195a0050f8ac 1-21
+src/main/index.ts
+  s_9f92f64c7e3feb::t_ca2529cce04972 8
+pnpm-lock.yaml
+  s_9f92f64c7e3feb::t_879fd1550b1a5e 1-5201
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "b9e9c0eb95e05f0decdaaa0aee8ba7616ee1df46",
+  "prompts": {},
+  "sessions": {
+    "s_9f92f64c7e3feb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ff0320659ffeJjQvGbCczUJwaD",
+        "model": "mimo-v2.5"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
