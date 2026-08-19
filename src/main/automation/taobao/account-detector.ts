@@ -15,23 +15,36 @@ export interface AccountIdentity {
 
 /**
  * 检测当前登录的淘宝账号身份
+ * 返回 null 表示未登录。
  */
 export async function detectAccountIdentity(page: PageAdapter): Promise<AccountIdentity | null> {
-  const result = await page.evaluate<{ username?: string; nick?: string } | null>(`
+  const result = await page.evaluate<{ username?: string; nick?: string; avatarUrl?: string } | null>(`
     (() => {
       try {
-        const username = document.querySelector('.site-nav-user-info .username')?.textContent?.trim()
-        const nick = document.querySelector('.site-nav-user-info .nick')?.textContent?.trim()
-        if (!username && !nick) return null
-        return { username, nick }
+        // 常见用户信息 DOM 结构兜底匹配
+        const nickEl = document.querySelector(
+          '.site-nav-user-info .nick, .site-nav-login-info-nick, .site-nav-user-info [class*=nick]'
+        );
+        const usernameEl = document.querySelector(
+          '.site-nav-user-info .username, .site-nav-login-info-nick'
+        );
+        const avatarEl = document.querySelector(
+          '.site-nav-user-info img[src*=alicdn], .site-nav-user-info .avatar img, #site-nav .site-nav-user img'
+        );
+        const nick = nickEl?.textContent?.trim() ?? '';
+        const username = usernameEl?.textContent?.trim() ?? '';
+        const avatarUrl = avatarEl?.getAttribute('src') ?? undefined;
+        if (!nick && !username) return null;
+        return { username, nick, avatarUrl };
       } catch {
-        return null
+        return null;
       }
     })()
   `)
   if (!result) return null
   return {
     username: result.username ?? '',
-    nick: result.nick ?? ''
+    nick: result.nick ?? '',
+    avatarUrl: result.avatarUrl
   }
 }

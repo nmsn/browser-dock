@@ -25,24 +25,58 @@ export interface CDPResponse {
   error?: { code: number; message: string }
 }
 
+export interface CDPEvent {
+  method: string
+  params?: Record<string, unknown>
+}
+
 export class CdpClient {
   private ws: WebSocket | null = null
   private nextId = 1
   private pending = new Map<number, (response: CDPResponse) => void>()
+  private eventListeners = new Map<string, Set<(event: CDPEvent) => void>>()
 
   constructor(private readonly debugUrl: string) {}
+
+  /**
+   * 订阅 CDP 事件（如 Network.requestWillBeSent, Page.loadEventFired 等）
+   */
+  onEvent(method: string, callback: (event: CDPEvent) => void): () => void {
+    let set = this.eventListeners.get(method)
+    if (!set) {
+      set = new Set()
+      this.eventListeners.set(method, set)
+    }
+    set.add(callback)
+    return () => {
+      set?.delete(callback)
+    }
+  }
 
   async connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.ws = new WebSocket(this.debugUrl)
       this.ws.on('open', () => resolve())
-      this.ws.on('error', reject)
+      this.ws.on('error', (err) => {
+        reject(new Error(`CDP_CONNECT_FAILED: ${this.debugUrl} — ${err.message}`))
+      })
       this.ws.on('message', (data) => {
-        const msg = JSON.parse(data.toString()) as CDPResponse
-        const cb = this.pending.get(msg.id)
-        if (cb) {
-          this.pending.delete(msg.id)
-          cb(msg)
+        const msg = JSON.parse(data.toString()) as CDPResponse & CDPEvent
+        // 有 id 则是命令响应
+        if (typeof msg.id === 'number') {
+          const cb = this.pending.get(msg.id)
+          if (cb) {
+            this.pending.delete(msg.id)
+            cb(msg)
+          }
+          return
+        }
+        // 无 id 则是事件
+        if (msg.method) {
+          const listeners = this.eventListeners.get(msg.method)
+          if (listeners) {
+            for (const cb of listeners) cb(msg)
+          }
         }
       })
     })
@@ -68,17 +102,27 @@ export class CdpClient {
     this.ws?.close()
     this.ws = null
     this.pending.clear()
+    this.eventListeners.clear()
   }
 }
 
 /**
  * 创建 CDP 客户端并连接到 Chrome 调试端口（browser target）
+ * browser 的 webSocketDebuggerUrl 必须从 /json/version 获取（包含 UUID）
  */
 export async function createCdpClient(runtime: AccountRuntime): Promise<CdpClient> {
   if (!runtime.debugPort) {
     throw new Error('CDP_CONNECT_FAILED: account has no debugPort')
   }
-  const client = new CdpClient(`ws://127.0.0.1:${runtime.debugPort}/devtools/browser`)
+  const resp = await fetch(`http://127.0.0.1:${runtime.debugPort}/json/version`)
+  if (!resp.ok) {
+    throw new Error(`CDP_CONNECT_FAILED: cannot reach /json/version (HTTP ${resp.status})`)
+  }
+  const version = (await resp.json()) as { webSocketDebuggerUrl?: string }
+  if (!version.webSocketDebuggerUrl) {
+    throw new Error('CDP_CONNECT_FAILED: /json/version has no webSocketDebuggerUrl')
+  }
+  const client = new CdpClient(normalizeWsUrl(version.webSocketDebuggerUrl, runtime.debugPort))
   await client.connect()
   return client
 }
@@ -102,8 +146,17 @@ async function listPageTargets(debugPort: number): Promise<TargetInfo[]> {
 }
 
 /**
+ * 将 webSocketDebuggerUrl 的 host 规范化为 127.0.0.1
+ * Chrome 返回的可能是 ws://localhost:PORT/...，localhost 在 IPv6 下解析
+ * 可能导致 WebSocket 连接 404/握手失败
+ */
+function normalizeWsUrl(url: string, port: number): string {
+  return url.replace(/ws:\/\/[^/]+/, `ws://127.0.0.1:${port}`)
+}
+
+/**
  * 等待并获取页面 target 的 WebSocket 地址
- * 若没有页面，则创建一个新的空白页
+ * 优先复用已有页面 target；若没有则创建一个新的空白页
  */
 export async function getOrCreatePageTarget(debugPort: number): Promise<TargetInfo> {
   let targets = await listPageTargets(debugPort)
@@ -117,7 +170,8 @@ export async function getOrCreatePageTarget(debugPort: number): Promise<TargetIn
   if (!page?.webSocketDebuggerUrl) {
     throw new Error('CDP_PAGE_TARGET_MISSING: no page target available')
   }
-  return page
+  // 归一化 host，避免 IPv6 localhost 解析问题
+  return { ...page, webSocketDebuggerUrl: normalizeWsUrl(page.webSocketDebuggerUrl, debugPort) }
 }
 
 /**

@@ -10,11 +10,31 @@ import {
   updateAccount as dbUpdateAccount,
   deleteAccount as dbDeleteAccount
 } from './store/accounts'
+import {
+  createTask as dbCreateTask,
+  listTasks as dbListTasks,
+  updateTask as dbUpdateTask,
+  deleteTask as dbDeleteTask
+} from './store/tasks'
+import {
+  createSchedule as dbCreateSchedule,
+  listSchedules as dbListSchedules,
+  updateSchedule as dbUpdateSchedule,
+  deleteSchedule as dbDeleteSchedule
+} from './store/schedules'
+import { listExecutionLogs } from './store/logs'
 import { startChromeForAccount, stopChromeForAccount, getRuntime, listRuntimes } from './chrome/manager'
 import { createPageCdpClient } from './chrome/cdp-client'
 import { startLogin, waitForLoginComplete } from './automation/taobao/login'
-import { PROFILES_PATH } from './config'
-import type { CreateAccountInput, Account, AccountRuntime } from '../shared/types'
+import { executeTask } from './scheduler/task-executor'
+import { PROFILES_PATH, DEFAULT_CONFIG } from './config'
+import type {
+  CreateAccountInput,
+  Account,
+  AccountRuntime,
+  CreateTaskInput,
+  CreateScheduleInput
+} from '../shared/types'
 
 /**
  * IPC 处理器注册
@@ -150,6 +170,79 @@ export function registerIpcHandlers(): void {
     }
   })
 
+  // ============ 任务管理（文档 2.3.1 / 13.1）============
+  ipcMain.handle('tasks:list', () => dbListTasks())
+
+  ipcMain.handle('tasks:create', (_event, input: CreateTaskInput) => {
+    if (!input || typeof input !== 'object') throw new Error('Invalid task input')
+    if (typeof input.name !== 'string' || input.name.trim() === '') {
+      throw new Error('Task name is required')
+    }
+    if (typeof input.script !== 'string' || input.script.trim() === '') {
+      throw new Error('Task script is required')
+    }
+    const task = dbCreateTask({
+      id: `task-${randomUUID()}`,
+      name: input.name.trim(),
+      type: input.type ?? 'custom',
+      script: input.script,
+      config: input.config ?? {},
+      timeoutMs: input.timeoutMs ?? DEFAULT_CONFIG.defaultTimeoutMs,
+      retryPolicy: input.retryPolicy ?? DEFAULT_CONFIG.defaultRetryPolicy
+    })
+    logger.info({ taskId: task.id }, 'Task created')
+    return task
+  })
+
+  ipcMain.handle('tasks:update', (_event, id: string, patch: Partial<CreateTaskInput>) => {
+    if (typeof id !== 'string' || !id) throw new Error('Task id is required')
+    if (!patch || typeof patch !== 'object') throw new Error('Invalid task patch')
+    return dbUpdateTask(id, patch)
+  })
+
+  ipcMain.handle('tasks:delete', (_event, id: string) => {
+    if (typeof id !== 'string' || !id) throw new Error('Task id is required')
+    const deleted = dbDeleteTask(id)
+    if (deleted) logger.info({ taskId: id }, 'Task deleted')
+    return deleted
+  })
+
+  // ============ 调度管理（文档 2.3.1 / 5.2）============
+  ipcMain.handle('schedules:list', () => dbListSchedules())
+
+  ipcMain.handle('schedules:create', (_event, input: CreateScheduleInput) => {
+    if (!input || typeof input !== 'object') throw new Error('Invalid schedule input')
+    if (typeof input.taskId !== 'string' || !input.taskId) throw new Error('Task id is required')
+    if (!Array.isArray(input.accountIds) || input.accountIds.length === 0) {
+      throw new Error('At least one account is required')
+    }
+    const schedule = dbCreateSchedule({
+      id: `schedule-${randomUUID()}`,
+      taskId: input.taskId,
+      accountIds: input.accountIds,
+      cronExpression: input.cronExpression,
+      timezone: input.timezone ?? 'Asia/Shanghai',
+      enabled: input.enabled ?? true,
+      misfirePolicy: input.misfirePolicy ?? 'skip',
+      maxConcurrency: input.maxConcurrency ?? DEFAULT_CONFIG.maxConcurrency
+    })
+    logger.info({ scheduleId: schedule.id }, 'Schedule created')
+    return schedule
+  })
+
+  ipcMain.handle('schedules:update', (_event, id: string, patch: Partial<CreateScheduleInput>) => {
+    if (typeof id !== 'string' || !id) throw new Error('Schedule id is required')
+    if (!patch || typeof patch !== 'object') throw new Error('Invalid schedule patch')
+    return dbUpdateSchedule(id, patch)
+  })
+
+  ipcMain.handle('schedules:delete', (_event, id: string) => {
+    if (typeof id !== 'string' || !id) throw new Error('Schedule id is required')
+    const deleted = dbDeleteSchedule(id)
+    if (deleted) logger.info({ scheduleId: id }, 'Schedule deleted')
+    return deleted
+  })
+
   // 密钥环操作（白名单 API）
   ipcMain.handle('keyring:set', (_event, key: string, value: string) => {
     if (typeof key !== 'string' || typeof value !== 'string') {
@@ -167,6 +260,29 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('keyring:delete', (_event, key: string) => {
     if (typeof key !== 'string') throw new Error('Invalid keyring key')
     return Keyring.deletePassword(key)
+  })
+
+  // ============ 任务执行（文档 2.6.2 定时任务执行流程 / 手工触发）============
+  ipcMain.handle('execution:run', async (_event, accountId: string, taskId: string) => {
+    if (typeof accountId !== 'string' || typeof taskId !== 'string') {
+      throw new Error('accountId and taskId are required')
+    }
+    const account = dbListAccounts().find((a) => a.id === accountId)
+    const task = dbListTasks().find((t) => t.id === taskId)
+    if (!account) throw new Error('ACCOUNT_NOT_FOUND')
+    if (!task) throw new Error('TASK_NOT_FOUND')
+
+    // 后台执行，不阻塞 IPC 返回
+    executeTask(account, task)
+      .then(() => logger.info({ accountId, taskId }, 'Manual execution finished'))
+      .catch((err) => logger.error({ accountId, taskId, err }, 'Manual execution failed'))
+
+    return { queued: true }
+  })
+
+  // 执行日志列表（用于执行监控页）
+  ipcMain.handle('execution:list', () => {
+    return listExecutionLogs({ limit: 50 })
   })
 
   logger.info('IPC handlers registered')

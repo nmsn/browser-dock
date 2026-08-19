@@ -5,28 +5,10 @@
  * 提供给任务脚本使用的高层 API：
  * - click / input / wait / navigate / screenshot
  * - 复用 PageAdapter
- *
- * Phase 3 完整实现
  */
 
-import type { PageAdapter } from '../../../shared/types'
-
-export async function click(page: PageAdapter, selector: string): Promise<void> {
-  await page.click(selector)
-}
-
-export async function input(page: PageAdapter, selector: string, value: string): Promise<void> {
-  await page.input(selector, value)
-}
-
-export async function waitFor(page: PageAdapter, selector: string, timeoutMs = 10_000): Promise<void> {
-  await page.waitForSelector(selector, timeoutMs)
-}
-
-export async function navigate(page: PageAdapter, url: string): Promise<void> {
-  await page.navigate(url)
-}
-
-export async function screenshot(page: PageAdapter, name: string): Promise<string> {
-  return page.screenshot(name)
-}
+export { click } from './click'
+export { input } from './input'
+export { waitFor, sleep } from './wait'
+export { navigate } from './navigate'
+export { screenshot } from './screenshot'

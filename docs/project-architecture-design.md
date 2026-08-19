@@ -503,19 +503,19 @@ export async function startLive(cdpClient: CdpClient, accountId: string): Promis
 ### Phase 2：自动化引擎（2-3 周）
 
 - [x] CDP 客户端（复用 Mirage）
-- [ ] 基础操作封装（点击、输入、导航、截图）
-- [ ] AutomationContext 适配层
-- [ ] 登录状态和账号身份检测
-- [ ] 插件代码迁移
-- [ ] 任务管理 UI
+- [x] 基础操作封装（点击、输入、导航、截图）
+- [x] AutomationContext 适配层
+- [x] 登录状态和账号身份检测
+- [x] 插件代码迁移
+- [x] 任务管理 UI
 
 ### Phase 3：定时调度（1-2 周）
 
-- [ ] Cron 调度器
+- [x] Cron 调度器
 - [ ] 多账号并行执行
-- [ ] 账号锁、并发池和任务状态机
-- [ ] 超时、取消和有限重试
-- [ ] 执行日志系统
+- [x] 账号锁、并发池和任务状态机
+- [x] 超时、取消和有限重试
+- [x] 执行日志系统
 - [ ] 执行监控 UI
 
 ### Phase 4：优化完善（持续）

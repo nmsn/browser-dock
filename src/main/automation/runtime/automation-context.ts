@@ -1,6 +1,5 @@
-import type { Account, AccountContext } from '../../../shared/types'
+import type { Account, AccountContext, NetworkAdapter, PageAdapter, StorageAdapter, TaskLogger } from '../../../shared/types'
 import type { CdpClient } from '../../chrome/cdp-client'
-import type { PageAdapter, StorageAdapter, NetworkAdapter, TaskLogger } from '../../../shared/types'
 import { CdpPageAdapter } from './page-adapter'
 import { TaskStorageAdapter } from './storage-adapter'
 import { CdpNetworkAdapter } from './network-adapter'
@@ -31,7 +30,7 @@ export function buildAutomationContext(
     },
     page: new CdpPageAdapter(cdp),
     storage: new TaskStorageAdapter(),
-    network: new CdpNetworkAdapter(),
+    network: new CdpNetworkAdapter(cdp),
     logger,
     signal
   }

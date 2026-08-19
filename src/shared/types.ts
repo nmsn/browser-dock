@@ -406,6 +406,49 @@ export interface DockAPI {
   // 淘宝登录流程（文档 2.6.1）
   loginStart: (accountId: string) => Promise<{ started: boolean }>
   loginWaitResult: (accountId: string, timeoutMs?: number) => Promise<{ loggedIn: boolean }>
+
+  // 任务管理（文档 2.3.1 任务管理 / 13.1 版本管理）
+  tasksList: () => Promise<Task[]>
+  tasksCreate: (input: CreateTaskInput) => Promise<Task>
+  tasksUpdate: (id: string, patch: Partial<Omit<Task, 'id' | 'createdAt' | 'version'>>) => Promise<Task | null>
+  tasksDelete: (id: string) => Promise<boolean>
+
+  // 调度管理（文档 2.3.1 调度管理）
+  schedulesList: () => Promise<Schedule[]>
+  schedulesCreate: (input: CreateScheduleInput) => Promise<Schedule>
+  schedulesUpdate: (id: string, patch: Partial<Omit<Schedule, 'id' | 'createdAt'>>) => Promise<Schedule | null>
+  schedulesDelete: (id: string) => Promise<boolean>
+
+  // 任务执行（文档 2.6.2）
+  executionRun: (accountId: string, taskId: string) => Promise<{ queued: boolean }>
+  executionList: () => Promise<ExecutionLog[]>
+}
+
+/**
+ * 创建任务输入
+ * id/version/createdAt/updatedAt 由主进程生成
+ */
+export interface CreateTaskInput {
+  name: string
+  type: TaskType
+  script: string
+  config?: Record<string, unknown>
+  timeoutMs?: number
+  retryPolicy?: RetryPolicy
+}
+
+/**
+ * 创建调度规则输入
+ * id/createdAt 由主进程生成
+ */
+export interface CreateScheduleInput {
+  taskId: string
+  accountIds: string[]
+  cronExpression: string
+  timezone?: string
+  enabled?: boolean
+  misfirePolicy?: MisfirePolicy
+  maxConcurrency?: number
 }
 
 // ============================================================================

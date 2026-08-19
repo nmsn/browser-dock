@@ -11,6 +11,14 @@ import type { PageAdapter } from '../../../shared/types'
 export class CdpPageAdapter implements PageAdapter {
   constructor(private readonly cdp: CdpClient) {}
 
+  /**
+   * 启用必要的 CDP 域（文档 6.2 第 8 步）
+   */
+  async init(): Promise<void> {
+    await this.cdp.send('Page.enable')
+    await this.cdp.send('Runtime.enable')
+  }
+
   async navigate(url: string): Promise<void> {
     await this.cdp.send('Page.navigate', { url })
   }

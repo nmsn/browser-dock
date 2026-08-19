@@ -1,5 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { DockAPI, CreateAccountInput, Account } from '../shared/types'
+import type {
+  DockAPI,
+  CreateAccountInput,
+  Account,
+  CreateTaskInput,
+  Task,
+  CreateScheduleInput,
+  Schedule
+} from '../shared/types'
 
 /**
  * 暴露到 renderer 的 API
@@ -27,7 +35,26 @@ const api: DockAPI = {
   // 淘宝登录流程
   loginStart: (accountId: string) => ipcRenderer.invoke('login:start', accountId),
   loginWaitResult: (accountId: string, timeoutMs?: number) =>
-    ipcRenderer.invoke('login:wait-result', accountId, timeoutMs)
+    ipcRenderer.invoke('login:wait-result', accountId, timeoutMs),
+
+  // 任务管理
+  tasksList: () => ipcRenderer.invoke('tasks:list'),
+  tasksCreate: (input: CreateTaskInput) => ipcRenderer.invoke('tasks:create', input),
+  tasksUpdate: (id: string, patch: Partial<Omit<Task, 'id' | 'createdAt' | 'version'>>) =>
+    ipcRenderer.invoke('tasks:update', id, patch),
+  tasksDelete: (id: string) => ipcRenderer.invoke('tasks:delete', id),
+
+  // 调度管理
+  schedulesList: () => ipcRenderer.invoke('schedules:list'),
+  schedulesCreate: (input: CreateScheduleInput) => ipcRenderer.invoke('schedules:create', input),
+  schedulesUpdate: (id: string, patch: Partial<Omit<Schedule, 'id' | 'createdAt'>>) =>
+    ipcRenderer.invoke('schedules:update', id, patch),
+  schedulesDelete: (id: string) => ipcRenderer.invoke('schedules:delete', id),
+
+  // 任务执行
+  executionRun: (accountId: string, taskId: string) =>
+    ipcRenderer.invoke('execution:run', accountId, taskId),
+  executionList: () => ipcRenderer.invoke('execution:list')
 }
 
 if (process.contextIsolated) {

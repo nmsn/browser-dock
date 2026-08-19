@@ -1,10 +1,10 @@
 import { spawn, type ChildProcess } from 'child_process'
 import { existsSync } from 'fs'
+import { createServer, type Server } from 'net'
 import { join } from 'path'
 import type { Account, AccountRuntime } from '../../shared/types'
 import { getOrCreateProfilePath, isProfileLocked, releaseProfile } from './profile'
 import { createCdpClient, type CdpClient } from './cdp-client'
-import { isProfileLocked as _ } from './profile'
 import logger from '../logger'
 
 /**
@@ -27,8 +27,36 @@ const instances = new Map<string, ChromeInstance>()
 let nextDebugPort = 9222
 
 /**
- * 启动账号对应的 Chrome 实例
+ * 分配一个可用的调试端口（文档 6.2 第 3 步：分配 CDP 端口）
+ * 从 nextDebugPort 开始，跳过已被占用的端口
  */
+async function allocateDebugPort(): Promise<number> {
+  let port = nextDebugPort
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const inUse = await isPortInUse(port)
+    if (!inUse) {
+      nextDebugPort = port + 1
+      return port
+    }
+    port++
+  }
+  throw new Error('CDP_PORT_EXHAUSTED: no free debug port available')
+}
+
+/**
+ * 检查端口是否已被占用
+ */
+async function isPortInUse(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const server: Server = createServer()
+    server.once('error', () => resolve(true))
+    server.once('listening', () => {
+      server.close(() => resolve(false))
+    })
+    server.listen(port, '127.0.0.1')
+  })
+}
+
 export async function startChromeForAccount(account: Account): Promise<ChromeInstance> {
   // 检查是否已在运行
   if (instances.has(account.id)) {
@@ -41,7 +69,7 @@ export async function startChromeForAccount(account: Account): Promise<ChromeIns
   }
 
   const profilePath = getOrCreateProfilePath(account)
-  const debugPort = nextDebugPort++
+  const debugPort = await allocateDebugPort()
 
   // 6.2 启动流程：分配 CDP 端口 → 启动 Chrome → 等待 /json/version 可访问 → 建立 CDP 连接
   const chromePath = findChromePath()
@@ -61,8 +89,25 @@ export async function startChromeForAccount(account: Account): Promise<ChromeIns
     { stdio: ['ignore', 'pipe', 'pipe'] }
   )
 
+  // 收集 Chrome 输出用于诊断（6.3 异常清理）
+  let chromeOut = ''
+  let chromeErr = ''
+  child.stdout?.on('data', (d) => {
+    chromeOut += d.toString()
+  })
+  child.stderr?.on('data', (d) => {
+    chromeErr += d.toString()
+  })
+
+  child.on('error', (err) => {
+    logger.error({ accountId: account.id, err }, 'Chrome spawn error')
+  })
+
   child.on('exit', (code, signal) => {
-    logger.warn({ accountId: account.id, code, signal }, 'Chrome process exited')
+    logger.warn(
+      { accountId: account.id, code, signal, stdout: chromeOut.slice(-500), stderr: chromeErr.slice(-500) },
+      'Chrome process exited'
+    )
     releaseProfile(account.id)
     instances.delete(account.id)
   })

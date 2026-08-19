@@ -5,8 +5,12 @@ import logger from './logger'
 import { initializeDatabase, closeDatabase } from './store/database'
 import { registerIpcHandlers } from './ipc-handlers'
 import { scanStaleChromeProcesses } from './chrome/manager'
-import { clearAllAccountLocks } from './store/account-locks'
+import { clearAllAccountLocks, isAccountLocked } from './store/account-locks'
 import { stopAllSchedules } from './scheduler/cron-scheduler'
+import { executeTask } from './scheduler/task-executor'
+import { createAccount as dbCreateAccount } from './store/accounts'
+import { createTask as dbCreateTask } from './store/tasks'
+import type { Account, Task } from '../shared/types'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -74,6 +78,15 @@ if (!gotTheLock) {
 
   app.whenReady().then(() => {
     bootstrap()
+
+    // 端到端自测模式：BROWSER_DOCK_SMOKE=1 electron .
+    if (process.env['BROWSER_DOCK_SMOKE'] === '1') {
+      runSmokeTest().finally(() => {
+        app.exit(0)
+      })
+      return
+    }
+
     createWindow()
 
     app.on('activate', () => {
@@ -82,6 +95,65 @@ if (!gotTheLock) {
       }
     })
   })
+}
+
+/**
+ * 端到端自测：创建账号+任务 → 启动 Chrome → 执行脚本 → 写日志
+ * 验证：Chrome 启动 / CDP / 自动化上下文 / 沙箱脚本 / 数据库 / 锁释放
+ */
+async function runSmokeTest(): Promise<void> {
+  const result = { pass: true, steps: [] as string[] }
+  const step = (name: string, ok: boolean): void => {
+    result.steps.push(`${ok ? '✓' : '✗'} ${name}`)
+    if (!ok) result.pass = false
+  }
+
+  try {
+    console.log('=== Browser Dock smoke test ===')
+
+    const account: Account = {
+      id: `smoke-account-${Date.now()}`,
+      name: '冒烟账号',
+      taobaoUsername: 'smoke@test.local',
+      profilePath: join(app.getPath('userData'), `smoke-profile-${Date.now()}`),
+      notes: '',
+      createdAt: new Date().toISOString(),
+      loginStatus: 'unknown'
+    }
+    dbCreateAccount(account)
+    step('DB: create account', true)
+
+    const task: Task = {
+      id: `smoke-task-${Date.now()}`,
+      name: '冒烟任务',
+      type: 'custom',
+      script: `
+        const title = await ctx.page.evaluate('document.title');
+        ctx.logger.info('Page title: ' + title);
+      `,
+      config: {},
+      version: 1,
+      timeoutMs: 30000,
+      retryPolicy: { maxAttempts: 1, backoffMs: 1000 },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    dbCreateTask(task)
+    step('DB: create task', true)
+
+    const execution = await executeTask(account, task)
+    step(`Executor: status=${execution.status}`, execution.status === 'success')
+
+    // 账号锁应已释放
+    const locked = isAccountLocked(account.id)
+    step('Lock released', !locked)
+  } catch (err) {
+    step(`executor threw: ${err instanceof Error ? err.message : String(err)}`, false)
+  }
+
+  console.log(result.steps.join('\n'))
+  console.log(result.pass ? 'SMOKE PASS' : 'SMOKE FAIL')
+  console.log(JSON.stringify({ pass: result.pass }))
 }
 
 app.on('window-all-closed', () => {
