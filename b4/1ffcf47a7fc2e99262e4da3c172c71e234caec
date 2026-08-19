@@ -1,0 +1,54 @@
+src/main/ipc-handlers.ts
+  s_9f92f64c7e3feb::t_789e4ff32a4989 272-275,277-278,282-289
+  s_9f92f64c7e3feb::t_9cd867c5b14c9a 230,237-239,245-248
+  s_9f92f64c7e3feb::t_4d6e7106af05b0 29
+src/renderer/src/store/useExecutionStore.ts
+  s_9f92f64c7e3feb::t_9f7f73b37f59f3 1-51
+src/preload/index.ts
+  s_9f92f64c7e3feb::t_cb3ad5bc28ce8d 55-58
+docs/project-architecture-design.md
+  s_9f92f64c7e3feb::t_9edcef4e0c72e4 515,519
+src/renderer/src/pages/Execution/index.tsx
+  s_9f92f64c7e3feb::t_afffe9b49fb2c8 1-3,5-18,22,24-25,27-50,52-64,67-75,78,81,84-181,186
+src/main/index.ts
+  s_9f92f64c7e3feb::t_ae753bee193c1d 9
+  s_9f92f64c7e3feb::t_dd1e1cd36ac77d 64-66
+  s_9f92f64c7e3feb::t_6b160882cc8c9e 154-171
+  s_9f92f64c7e3feb::t_caaf84746baa5f 11
+src/renderer/src/pages/Tasks/index.tsx
+  s_9f92f64c7e3feb::t_360efd4bd9cea0 157,167-172,174,178-179,199-216,224-227
+src/main/scheduler/task-runner.ts
+  s_9f92f64c7e3feb::t_6e924631ad7f87 50-64
+  s_918860d370aa9e::t_3bf98cfdce6d27 49
+src/shared/types.ts
+  s_9f92f64c7e3feb::t_c41abf6f31f27a 423-434
+src/main/scheduler/service.ts
+  s_9f92f64c7e3feb::t_59fd9266178459 127,137,139
+  s_9f92f64c7e3feb::t_362ffb5da06a4a 2-4,6,8-126,128-136,138,140-162
+  s_9f92f64c7e3feb::t_537effd64fd611 1,5
+  s_9f92f64c7e3feb::t_b319d8d700219d 7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "b41ffcf47a7fc2e99262e4da3c172c71e234caec",
+  "prompts": {},
+  "sessions": {
+    "s_918860d370aa9e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fec85557dffeQW1euvlH7ObbrP",
+        "model": "deepseek-v4-flash-0731"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    },
+    "s_9f92f64c7e3feb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ff0320659ffeJjQvGbCczUJwaD",
+        "model": "mimo-v2.5"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
