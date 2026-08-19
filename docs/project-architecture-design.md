@@ -492,17 +492,17 @@ export async function startLive(cdpClient: CdpClient, accountId: string): Promis
 
 ### Phase 1：基础框架（1-2 周）
 
-- [ ] Electron 项目初始化
-- [ ] SQLite 数据库搭建
-- [ ] 数据库 migration 和备份机制
-- [ ] Chrome 进程管理（复用 Mirage）
-- [ ] Profile 锁和账号运行时状态
-- [ ] 账号管理 UI
-- [ ] 账号登录流程
+- [x] Electron 项目初始化
+- [x] SQLite 数据库搭建
+- [x] 数据库 migration 和备份机制
+- [x] Chrome 进程管理（复用 Mirage）
+- [x] Profile 锁和账号运行时状态
+- [x] 账号管理 UI
+- [x] 账号登录流程
 
 ### Phase 2：自动化引擎（2-3 周）
 
-- [ ] CDP 客户端（复用 Mirage）
+- [x] CDP 客户端（复用 Mirage）
 - [ ] 基础操作封装（点击、输入、导航、截图）
 - [ ] AutomationContext 适配层
 - [ ] 登录状态和账号身份检测

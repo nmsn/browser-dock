@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import { DB_PATH } from '../config'
 import logger from '../logger'
+import { backupDatabase } from './backup'
 
 /**
  * 数据库初始化与迁移
@@ -59,6 +60,14 @@ function applyMigrations(database: Database.Database): void {
   const pending = MIGRATIONS.filter((m) => !applied.has(m.version)).sort((a, b) => a.version - b.version)
 
   if (pending.length === 0) return
+
+  // 13.2 迁移生成前先备份数据库，迁移失败可回滚
+  try {
+    backupDatabase('pre-migration')
+  } catch (err) {
+    // 备份失败不阻塞迁移（只记录警告）
+    logger.warn({ err }, 'Database backup before migration failed')
+  }
 
   const insertMigration = database.prepare(
     'INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)'

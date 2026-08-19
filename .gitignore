@@ -39,9 +39,6 @@ out/
 .env.local
 .env.*.local
 
-# pnpm
-pnpm-lock.yaml
-
 # Vite
 .vite/
 

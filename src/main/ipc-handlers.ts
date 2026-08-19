@@ -1,7 +1,20 @@
 import { ipcMain } from 'electron'
 import { app } from 'electron'
+import { randomUUID } from 'crypto'
+import { join } from 'path'
 import logger from './logger'
 import { Keyring } from './secrets/keyring'
+import {
+  createAccount as dbCreateAccount,
+  listAccounts as dbListAccounts,
+  updateAccount as dbUpdateAccount,
+  deleteAccount as dbDeleteAccount
+} from './store/accounts'
+import { startChromeForAccount, stopChromeForAccount, getRuntime, listRuntimes } from './chrome/manager'
+import { createPageCdpClient } from './chrome/cdp-client'
+import { startLogin, waitForLoginComplete } from './automation/taobao/login'
+import { PROFILES_PATH } from './config'
+import type { CreateAccountInput, Account, AccountRuntime } from '../shared/types'
 
 /**
  * IPC 处理器注册
@@ -9,6 +22,18 @@ import { Keyring } from './secrets/keyring'
  * - IPC 入参在主进程重新校验，不能信任 Renderer 类型声明
  * - 不允许 Renderer 直接执行任意脚本或访问文件系统
  */
+
+/**
+ * 基于 Chrome 实例的调试端口启动登录流程
+ */
+async function startLoginFromInstance(debugPort: number): Promise<void> {
+  const pageCdp = await createPageCdpClient(debugPort)
+  try {
+    await startLogin(pageCdp)
+  } finally {
+    pageCdp.disconnect()
+  }
+}
 
 export function registerIpcHandlers(): void {
   // 应用信息
@@ -19,6 +44,111 @@ export function registerIpcHandlers(): void {
     node: process.versions.node,
     chrome: process.versions.chrome
   }))
+
+  // ============ 账号管理（文档 6.4 Profile 管理要求）============
+  ipcMain.handle('accounts:list', () => dbListAccounts())
+
+  ipcMain.handle('accounts:create', (_event, input: CreateAccountInput) => {
+    // 主进程重新校验入参，不能信任 renderer
+    if (!input || typeof input !== 'object') throw new Error('Invalid account input')
+    if (typeof input.name !== 'string' || input.name.trim() === '') {
+      throw new Error('Account name is required')
+    }
+    if (typeof input.taobaoUsername !== 'string') {
+      throw new Error('taobaoUsername is required')
+    }
+
+    const id = randomUUID()
+    // Profile 路径由应用生成，不允许脚本自定义（文档 6.4）
+    const profilePath = join(PROFILES_PATH, id)
+
+    const account: Account = {
+      id,
+      name: input.name.trim(),
+      taobaoUsername: input.taobaoUsername.trim(),
+      profilePath,
+      proxyConfig: input.proxyConfig,
+      notes: input.notes ?? '',
+      createdAt: new Date().toISOString(),
+      loginStatus: 'unknown'
+    }
+    const created = dbCreateAccount(account)
+    logger.info({ accountId: created.id }, 'Account created')
+    return created
+  })
+
+  ipcMain.handle('accounts:update', (_event, id: string, patch: Partial<Account>) => {
+    if (typeof id !== 'string' || !id) throw new Error('Account id is required')
+    if (!patch || typeof patch !== 'object') throw new Error('Invalid account patch')
+    return dbUpdateAccount(id, patch)
+  })
+
+  ipcMain.handle('accounts:delete', (_event, id: string) => {
+    if (typeof id !== 'string' || !id) throw new Error('Account id is required')
+    const deleted = dbDeleteAccount(id)
+    if (deleted) logger.info({ accountId: id }, 'Account deleted')
+    return deleted
+  })
+
+  // ============ 浏览器 / 登录流程（文档 6.2 启动流程 / 2.6.1 登录流程）============
+  ipcMain.handle('browser:start', async (_event, accountId: string) => {
+    if (typeof accountId !== 'string' || !accountId) throw new Error('Account id is required')
+    const account = dbListAccounts().find((a) => a.id === accountId)
+    if (!account) throw new Error('ACCOUNT_NOT_FOUND')
+    const instance = await startChromeForAccount(account)
+    return instance.runtime
+  })
+
+  ipcMain.handle('browser:stop', async (_event, accountId: string) => {
+    if (typeof accountId !== 'string' || !accountId) throw new Error('Account id is required')
+    await stopChromeForAccount(accountId)
+    return true
+  })
+
+  ipcMain.handle('browser:get-runtime', (_event, accountId: string) => {
+    if (typeof accountId !== 'string' || !accountId) throw new Error('Account id is required')
+    return getRuntime(accountId)
+  })
+
+  ipcMain.handle('browser:list-runtimes', () => listRuntimes())
+
+  // 登录流程：打开淘宝登录页，等待用户手动完成登录
+  ipcMain.handle('login:start', async (_event, accountId: string) => {
+    if (typeof accountId !== 'string' || !accountId) throw new Error('Account id is required')
+    const account = dbListAccounts().find((a) => a.id === accountId)
+    if (!account) throw new Error('ACCOUNT_NOT_FOUND')
+
+    const runtime = getRuntime(accountId)
+    if (!runtime?.debugPort) {
+      // 自动先启动浏览器
+      const instance = await startChromeForAccount(account)
+      await startLoginFromInstance(instance.debugPort)
+      return { started: true }
+    }
+    await startLoginFromInstance(runtime.debugPort)
+    return { started: true }
+  })
+
+  ipcMain.handle('login:wait-result', async (_event, accountId: string, timeoutMs?: number) => {
+    if (typeof accountId !== 'string' || !accountId) throw new Error('Account id is required')
+    const runtime = getRuntime(accountId)
+    if (!runtime?.debugPort) throw new Error('BROWSER_NOT_RUNNING')
+    const pageCdp = await createPageCdpClient(runtime.debugPort)
+    try {
+      const loggedIn = await waitForLoginComplete(pageCdp, timeoutMs ?? 120_000)
+      if (loggedIn) {
+        // 更新数据库登录状态（2.6.1 第 6 步）
+        dbUpdateAccount(accountId, {
+          loginStatus: 'logged-in',
+          lastLoginAt: new Date().toISOString(),
+          lastLoginCheckAt: new Date().toISOString()
+        })
+      }
+      return { loggedIn }
+    } finally {
+      pageCdp.disconnect()
+    }
+  })
 
   // 密钥环操作（白名单 API）
   ipcMain.handle('keyring:set', (_event, key: string, value: string) => {

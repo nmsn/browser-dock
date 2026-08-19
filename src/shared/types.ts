@@ -373,11 +373,39 @@ export interface AppInfo {
 }
 
 /**
+ * 创建账号输入
+ * id 由主进程生成，createdAt/loginStatus 由主进程初始化
+ */
+export interface CreateAccountInput {
+  name: string
+  taobaoUsername: string
+  proxyConfig?: ProxyConfig
+  notes?: string
+}
+
+/**
  * IPC 接口契约
+ * hand-written types + contextBridge（文档 15.3 IPC 选型）
  */
 export interface DockAPI {
   getVersion: () => Promise<string>
   getAppInfo: () => Promise<AppInfo>
+
+  // 账号管理
+  accountsList: () => Promise<Account[]>
+  accountsCreate: (input: CreateAccountInput) => Promise<Account>
+  accountsUpdate: (id: string, patch: Partial<Omit<Account, 'id' | 'createdAt'>>) => Promise<Account | null>
+  accountsDelete: (id: string) => Promise<boolean>
+
+  // 浏览器 / Profile 生命周期（文档 6.2 / 6.3）
+  browserStart: (accountId: string) => Promise<AccountRuntime>
+  browserStop: (accountId: string) => Promise<boolean>
+  browserGetRuntime: (accountId: string) => Promise<AccountRuntime | null>
+  browserListRuntimes: () => Promise<AccountRuntime[]>
+
+  // 淘宝登录流程（文档 2.6.1）
+  loginStart: (accountId: string) => Promise<{ started: boolean }>
+  loginWaitResult: (accountId: string, timeoutMs?: number) => Promise<{ loggedIn: boolean }>
 }
 
 // ============================================================================

@@ -5,7 +5,7 @@ import logger from './logger'
 import { initializeDatabase, closeDatabase } from './store/database'
 import { registerIpcHandlers } from './ipc-handlers'
 import { scanStaleChromeProcesses } from './chrome/manager'
-import { clearAllAccountLocks } from './scheduler/task-runner'
+import { clearAllAccountLocks } from './store/account-locks'
 import { stopAllSchedules } from './scheduler/cron-scheduler'
 
 let mainWindow: BrowserWindow | null = null

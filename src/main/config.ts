@@ -7,6 +7,9 @@ export const APP_DATA_PATH = app.getPath('userData')
 // 数据库路径
 export const DB_PATH = join(APP_DATA_PATH, 'browser-dock.db')
 
+// 数据库备份目录
+export const DB_BACKUP_PATH = join(APP_DATA_PATH, 'backups')
+
 // Chrome 用户数据目录
 export const PROFILES_PATH = join(APP_DATA_PATH, 'profiles')
 
