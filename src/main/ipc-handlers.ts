@@ -23,6 +23,7 @@ import {
   deleteSchedule as dbDeleteSchedule
 } from './store/schedules'
 import { listExecutionLogs } from './store/logs'
+import { listDiagnostics, getDiagnostic } from './store/diagnostics'
 import { startChromeForAccount, stopChromeForAccount, getRuntime, listRuntimes } from './chrome/manager'
 import { createPageCdpClient } from './chrome/cdp-client'
 import { startLogin, waitForLoginComplete } from './automation/taobao/login'
@@ -309,6 +310,17 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('execution:export-csv', async () => {
     const path = await exportExecutionLogsCsv()
     return { path }
+  })
+
+  // 页面诊断（11.2 页面变更检测）
+  ipcMain.handle('diagnostics:list', (_event, executionId: string) => {
+    if (typeof executionId !== 'string' || !executionId) throw new Error('executionId is required')
+    return listDiagnostics(executionId)
+  })
+
+  ipcMain.handle('diagnostics:get', (_event, id: string) => {
+    if (typeof id !== 'string' || !id) throw new Error('diagnostic id is required')
+    return getDiagnostic(id)
   })
 
   logger.info('IPC handlers registered')

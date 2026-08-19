@@ -425,6 +425,10 @@ export interface DockAPI {
   executionCancel: (executionId: string) => Promise<{ cancelled: boolean }>
   executionExportCsv: () => Promise<{ path: string | null }>
 
+  // 页面诊断（文档 11.2）
+  diagnosticsList: (executionId: string) => Promise<PageDiagnostic[]>
+  diagnosticsGet: (id: string) => Promise<PageDiagnostic | null>
+
   // 执行事件订阅（文档 11.3 实时状态）
   onExecutionStatus: (callback: (status: ExecutionStatus, log: Partial<ExecutionLog>) => void) => () => void
   onExecutionLog: (callback: (log: ExecutionLog) => void) => () => void

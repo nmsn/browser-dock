@@ -168,6 +168,25 @@ const MIGRATIONS: Migration[] = [
       CREATE INDEX idx_execution_logs_status ON execution_logs(status);
       CREATE INDEX idx_schedules_enabled ON schedules(enabled);
     `
+  },
+  {
+    version: 2,
+    name: 'page_diagnostics',
+    sql: `
+      -- 页面诊断表（文档 11.2 页面变更检测）
+      CREATE TABLE page_diagnostics (
+        id TEXT PRIMARY KEY,
+        execution_id TEXT NOT NULL,
+        url TEXT,
+        title TEXT,
+        dom_snapshot_path TEXT,
+        screenshot_path TEXT,
+        console_errors TEXT,
+        captured_at TEXT NOT NULL,
+        FOREIGN KEY (execution_id) REFERENCES execution_logs(id)
+      );
+      CREATE INDEX idx_diagnostics_execution ON page_diagnostics(execution_id);
+    `
   }
 ]
 

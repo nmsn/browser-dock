@@ -7,6 +7,7 @@ import { registerIpcHandlers } from './ipc-handlers'
 import { scanStaleChromeProcesses } from './chrome/manager'
 import { clearAllAccountLocks, isAccountLocked } from './store/account-locks'
 import { initScheduler, stopAllSchedules } from './scheduler/service'
+import { initNotifier } from './notifier'
 import { executeTask } from './scheduler/task-executor'
 import { runTaskNow } from './scheduler/service'
 import { createAccount as dbCreateAccount } from './store/accounts'
@@ -61,6 +62,7 @@ function bootstrap(): void {
   // 数据库初始化
   initializeDatabase()
   registerIpcHandlers()
+  initNotifier()
 
   // 调度器初始化（注册所有启用的 cron 任务，文档 5.2）
   initScheduler()

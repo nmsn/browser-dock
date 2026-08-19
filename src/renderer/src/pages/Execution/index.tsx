@@ -1,9 +1,18 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, XCircle, Download } from 'lucide-react'
+import { RefreshCw, XCircle, Download, FileSearch } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Select } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
 import {
   Table,
   TableBody,
@@ -15,7 +24,7 @@ import {
 import { useExecutionStore } from '@/store/useExecutionStore'
 import { useTasksStore } from '@/store/useTasksStore'
 import { useAccountsStore } from '@/store/useAccountsStore'
-import type { ExecutionStatus } from '../../../../shared/types'
+import type { ExecutionStatus, PageDiagnostic } from '../../../../shared/types'
 
 /**
  * 执行监控页面
@@ -46,6 +55,95 @@ function formatDuration(ms?: number): string {
   if (ms == null) return '—'
   if (ms < 1000) return `${ms}ms`
   return `${(ms / 1000).toFixed(1)}s`
+}
+
+/**
+ * 页面诊断查看器（文档 11.2）
+ * 展示失败执行的 URL/Title/DOM 快照/截图/Console 错误
+ */
+function DiagnosticViewer({ executionId }: { executionId: string }) {
+  const [open, setOpen] = useState(false)
+  const [diagnostics, setDiagnostics] = useState<PageDiagnostic[] | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    setLoading(true)
+    window.dock
+      .diagnosticsList(executionId)
+      .then((list) => setDiagnostics(list))
+      .finally(() => setLoading(false))
+  }, [open, executionId])
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="ghost" size="icon" title="查看页面诊断" />}>
+        <FileSearch className="h-4 w-4" />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>页面诊断</DialogTitle>
+          <DialogDescription>失败时自动捕获的页面状态（文档 11.2）</DialogDescription>
+        </DialogHeader>
+        {loading ? (
+          <p className="text-sm text-muted-foreground py-4">加载中...</p>
+        ) : !diagnostics || diagnostics.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4">该执行无诊断记录</p>
+        ) : (
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {diagnostics.map((d, i) => (
+              <Card key={i}>
+                <CardContent className="pt-4 space-y-2 text-sm">
+                  <div>
+                    <span className="font-medium">URL：</span>
+                    <span className="font-mono text-xs text-muted-foreground">{d.url || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Title：</span>
+                    <span className="text-muted-foreground">{d.title || '—'}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">时间：</span>
+                    <span className="text-muted-foreground">
+                      {new Date(d.timestamp).toLocaleString('zh-CN')}
+                    </span>
+                  </div>
+                  {d.domSnapshot && (
+                    <div>
+                      <span className="font-medium">DOM 快照：</span>
+                      <span className="font-mono text-xs text-muted-foreground break-all">
+                        {d.domSnapshot}
+                      </span>
+                    </div>
+                  )}
+                  {d.screenshotPath && (
+                    <div>
+                      <span className="font-medium">截图：</span>
+                      <span className="font-mono text-xs text-muted-foreground break-all">
+                        {d.screenshotPath}
+                      </span>
+                    </div>
+                  )}
+                  {d.consoleErrors && d.consoleErrors.length > 0 && (
+                    <div>
+                      <span className="font-medium">Console 错误（{d.consoleErrors.length}）：</span>
+                      <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-x-auto">
+                        {d.consoleErrors.slice(0, 5).join('\n')}
+                        {d.consoleErrors.length > 5 ? '\n...' : ''}
+                      </pre>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+        <div className="flex justify-end pt-4">
+          <DialogClose render={<Button variant="outline" />}>关闭</DialogClose>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 export default function ExecutionPage() {
@@ -200,19 +298,24 @@ export default function ExecutionPage() {
                         {log.error ?? '—'}
                       </TableCell>
                       <TableCell className="text-right">
-                        {cancellable && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:text-destructive"
-                            title="取消任务"
-                            onClick={async () => {
-                              window.dock.executionCancel(log.id)
-                            }}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                        )}
+                        <div className="flex items-center justify-end gap-1">
+                          {(log.status === 'failed' || log.status === 'timeout') && (
+                            <DiagnosticViewer executionId={log.id} />
+                          )}
+                          {cancellable && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:text-destructive"
+                              title="取消任务"
+                              onClick={async () => {
+                                window.dock.executionCancel(log.id)
+                              }}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   )

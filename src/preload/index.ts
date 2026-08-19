@@ -8,7 +8,8 @@ import type {
   CreateScheduleInput,
   Schedule,
   ExecutionLog,
-  ExecutionStatus
+  ExecutionStatus,
+  PageDiagnostic
 } from '../shared/types'
 
 /**
@@ -61,6 +62,11 @@ const api: DockAPI = {
   executionCancel: (executionId: string) =>
     ipcRenderer.invoke('execution:cancel', executionId),
   executionExportCsv: () => ipcRenderer.invoke('execution:export-csv'),
+
+  // 页面诊断
+  diagnosticsList: (executionId: string) =>
+    ipcRenderer.invoke('diagnostics:list', executionId),
+  diagnosticsGet: (id: string) => ipcRenderer.invoke('diagnostics:get', id),
 
   // 执行事件订阅（文档 11.3 实时状态）
   onExecutionStatus: (callback: (status: ExecutionStatus, log: Partial<ExecutionLog>) => void) => {

@@ -1,4 +1,6 @@
 import { runInNewContext } from 'vm'
+import { writeFileSync, mkdirSync } from 'fs'
+import { join } from 'path'
 import type {
   Account,
   AutomationContext,
@@ -8,13 +10,16 @@ import type {
   Task
 } from '../../shared/types'
 import logger from '../logger'
+import { SCREENSHOTS_PATH } from '../config'
 import { startChromeForAccount, stopChromeForAccount, getRuntime } from '../chrome/manager'
 import { createPageCdpClient } from '../chrome/cdp-client'
 import { buildAutomationContext } from '../automation/runtime/automation-context'
 import { createExecutionLog as dbCreateLog, updateExecutionLog as dbUpdateLog, appendStateTransition as dbAppendTransition } from '../store/logs'
 import { acquireAccountLock, releaseAccountLock } from '../store/account-locks'
+import { createDiagnostic } from '../store/diagnostics'
 import { emitExecutionStatus, emitExecutionLog } from '../execution-events'
 import { registerCancellable, unregisterCancellable } from '../cancel-registry'
+import { notifyExecutionResult } from '../notifier'
 
 /**
  * 任务执行器
@@ -127,6 +132,7 @@ export async function executeTask(
     record('success', `Completed in ${execution.duration}ms`)
     logger.info({ executionId, accountId: account.id, taskId: task.id, duration: execution.duration }, 'Task succeeded')
     emitExecutionLog(execution as ExecutionLog)
+    notifyExecutionResult(execution as ExecutionLog, { taskName: task.name, accountName: account.name })
   } catch (err) {
     execution.duration = Date.now() - startTime
     const message = err instanceof Error ? err.message : String(err)
@@ -143,6 +149,7 @@ export async function executeTask(
     execution.error = message
     dbUpdateLog(executionId, { error: message })
     emitExecutionLog(execution as ExecutionLog)
+    notifyExecutionResult(execution as ExecutionLog, { taskName: task.name, accountName: account.name })
 
     // 保存诊断信息（11.2 页面变更检测）
     if (err instanceof Error && err.message.startsWith('PG_SELECTOR_NOT_FOUND')) {
@@ -327,7 +334,10 @@ function taskLogger(executionId: string) {
 }
 
 /**
- * 保存页面诊断信息（11.2）
+ * 保存页面诊断信息（11.2 页面变更检测）
+ *
+ * 采集：URL、title、DOM 快照（outerHTML）、截图、Console 错误
+ * 保存到：screenshots/ + page_diagnostics 表
  */
 async function savePageDiagnostic(
   cdp: Awaited<ReturnType<typeof createPageCdpClient>> | null,
@@ -335,18 +345,59 @@ async function savePageDiagnostic(
 ): Promise<void> {
   if (!cdp) return
   try {
-    const [urlResult, titleResult, screenshotResult] = await Promise.allSettled([
+    const [urlResult, titleResult, domResult, consoleResult, screenshotResult] = await Promise.allSettled([
       cdp.send('Runtime.evaluate', { expression: 'window.location.href', returnByValue: true }),
       cdp.send('Runtime.evaluate', { expression: 'document.title', returnByValue: true }),
-      cdp.send('Page.captureScreenshot', { format: 'png' })
+      cdp.send<{ result: { value: string } }>('Runtime.evaluate', {
+        expression: 'document.documentElement.outerHTML',
+        returnByValue: true
+      }),
+      cdp.send<{ exceptionDetails?: { exception?: { description?: string } } }>('Runtime.evaluate', {
+        expression: 'window.__collectedConsoleErrors || []',
+        returnByValue: true
+      }),
+      cdp.send<{ data: string }>('Page.captureScreenshot', { format: 'png' })
     ])
-    const url = urlResult.status === 'fulfilled' ? urlResult.value.result?.value : undefined
-    const title = titleResult.status === 'fulfilled' ? titleResult.value.result?.value : undefined
-    if (url || title) {
-      logger.warn({ executionId, url, title }, 'Page diagnostic captured')
+
+    const url =
+      urlResult.status === 'fulfilled' ? String(urlResult.value.result?.value ?? '') : ''
+    const title =
+      titleResult.status === 'fulfilled' ? String(titleResult.value.result?.value ?? '') : ''
+    const domHtml =
+      domResult.status === 'fulfilled' ? String(domResult.value.result?.value ?? '').slice(0, 1_000_000) : ''
+
+    let domSnapshotPath: string | undefined
+    if (domHtml) {
+      const dir = join(SCREENSHOTS_PATH, 'dom')
+      mkdirSync(dir, { recursive: true })
+      const file = join(dir, `${executionId}.html`)
+      writeFileSync(file, domHtml, 'utf-8')
+      domSnapshotPath = file
     }
-    void screenshotResult
-  } catch {
-    // 诊断失败不抛错
+
+    let screenshotPath: string | undefined
+    if (screenshotResult.status === 'fulfilled' && screenshotResult.value.data) {
+      const file = join(SCREENSHOTS_PATH, `${executionId}.png`)
+      writeFileSync(file, Buffer.from(screenshotResult.value.data, 'base64'))
+      screenshotPath = file
+    }
+
+    let consoleErrors: string[] | undefined
+    if (consoleResult.status === 'fulfilled' && consoleResult.value?.result?.value) {
+      consoleErrors = consoleResult.value.result.value as string[]
+    }
+
+    createDiagnostic({
+      executionId,
+      url,
+      title,
+      domSnapshotPath,
+      screenshotPath,
+      consoleErrors
+    })
+
+    logger.warn({ executionId, url, title }, 'Page diagnostic captured')
+  } catch (err) {
+    logger.warn({ executionId, err }, 'Failed to save page diagnostic')
   }
 }
