@@ -1,0 +1,104 @@
+src/renderer/src/components/ui/select.tsx
+  s_9f92f64c7e3feb::t_0ba594cc5b37c9 1-20
+src/shared/types.ts
+  s_9f92f64c7e3feb::t_90a9c927bfa333 421-424
+  s_9f92f64c7e3feb::t_2f8093c6d3b771 409-420,425-451
+src/main/automation/runtime/page-adapter.ts
+  s_9f92f64c7e3feb::t_869efee13dffcd 14-21
+src/renderer/src/App.tsx
+  s_9f92f64c7e3feb::t_5d40fe636d210b 6,10,16,32-33,39-45,85
+src/preload/index.ts
+  s_9f92f64c7e3feb::t_ee26940fd371b4 38-51
+  s_9f92f64c7e3feb::t_80a788791a2bec 2-10
+  s_9f92f64c7e3feb::t_f708d1c8fef6c4 52-57
+src/renderer/src/pages/Schedules/index.tsx
+  s_9f92f64c7e3feb::t_2e532519388dff 1-306
+src/renderer/src/pages/Tasks/index.tsx
+  s_9f92f64c7e3feb::t_a682304dff9341 154-217
+  s_9f92f64c7e3feb::t_dcaf473dee9aaa 2,29
+  s_9f92f64c7e3feb::t_84066aff2465bc 1,3,5-28,30,35,37-153,219-224,227-238,241-248,252-254,257-290,295-300,305
+  s_9f92f64c7e3feb::t_ee7eb7d0a288d5 291-294
+src/renderer/src/components/ui/textarea.tsx
+  s_9f92f64c7e3feb::t_29187c2d27094b 1-18
+src/main/index.ts
+  s_9f92f64c7e3feb::t_cfee51719aa609 10-13
+  s_9f92f64c7e3feb::t_c83e1a94aa9137 118
+  s_9f92f64c7e3feb::t_3f9ca3dfde9697 8
+  s_9f92f64c7e3feb::t_c306a866d35be2 81-89,100-117,119-156
+  s_9f92f64c7e3feb::t_d6bdc16bdbf330 157-158
+src/renderer/src/store/useTasksStore.ts
+  s_9f92f64c7e3feb::t_cffeaec5c7e31a 1-68
+scripts/test-executor.cjs
+  s_9f92f64c7e3feb::t_0ef793212ee1b3 10,12,29
+  s_9f92f64c7e3feb::t_cb06696406f79f 1-9,11,13-28,30-38
+src/main/automation/actions/index.ts
+  s_9f92f64c7e3feb::t_2ad525035abafd 10-14
+src/renderer/src/components/ui/switch.tsx
+  s_9f92f64c7e3feb::t_23a342bd8f9fea 1-4,6,11,14-16,20-21,23-24,27-30,32-35,37-39
+  s_9f92f64c7e3feb::t_23b860c89198fa 5,7-10,12-13,17-19,22,25-26,31,36
+src/main/scheduler/task-executor.ts
+  s_9f92f64c7e3feb::t_ccb845802f2299 11
+  s_9f92f64c7e3feb::t_1c3eb33257c703 1,6-7,12-31,35-39,43,49-77,82,85-86,88-91,93-110,112-130,134-141,143-144,148-152,154-160,179,191-199,205-214,216-223,228,230-250
+  s_9f92f64c7e3feb::t_aa0bb2bd01bc15 92
+  s_9f92f64c7e3feb::t_01b94d5654722d 161-178,180-190,200-204
+src/main/chrome/cdp-client.ts
+  s_9f92f64c7e3feb::t_2e358580af471d 28-32,37,41-54,64-79,105
+  s_9f92f64c7e3feb::t_313c56230fdfee 149-156,159,173-174
+  s_9f92f64c7e3feb::t_f426ef30ede823 60-62
+  s_9f92f64c7e3feb::t_c692c486828cc6 111,117-125
+  s_9f92f64c7e3feb::t_9fbf1ccdfe9f38 55
+  s_9f92f64c7e3feb::t_2a812ad735c65c 148
+src/main/automation/runtime/automation-context.ts
+  s_9f92f64c7e3feb::t_6b1151c2a838df 1,33,37
+src/main/chrome/manager.ts
+  s_9f92f64c7e3feb::t_22f2f5934cf339 92-105,107-110
+  s_9f92f64c7e3feb::t_06a7cf8334a767 30-31,33-50,52-59,72
+  s_9f92f64c7e3feb::t_71787396a79a88 51
+  s_9f92f64c7e3feb::t_c3d570dc9c90e3 3
+src/main/automation/actions/screenshot.ts
+  s_9f92f64c7e3feb::t_bf7e313307a361 1-10
+src/main/automation/actions/click.ts
+  s_9f92f64c7e3feb::t_3c1938852d9dde 1-15
+src/main/automation/taobao/login-detector.ts
+  s_9f92f64c7e3feb::t_32ed9c583f2c0d 7-10,13-23,29-77,81
+src/main/automation/actions/wait.ts
+  s_9f92f64c7e3feb::t_0ac4822d8a63fe 1-35
+src/main/automation/actions/input.ts
+  s_9f92f64c7e3feb::t_9a7b5520e30866 1-12
+src/main/automation/taobao/account-detector.ts
+  s_9f92f64c7e3feb::t_d9c9b7ebae7d86 18,21,24-38,40,47-48
+src/main/automation/runtime/network-adapter.ts
+  s_9f92f64c7e3feb::t_8bd1532aca0501 7,12-13,19-56,67-81,84,88,91
+docs/project-architecture-design.md
+  s_9f92f64c7e3feb::t_47572dab757972 506-510,514,516-518
+src/main/automation/actions/navigate.ts
+  s_9f92f64c7e3feb::t_1f111685f8337c 1-9
+src/main/ipc-handlers.ts
+  s_9f92f64c7e3feb::t_505c54dc71a6e7 13-24,30-37
+  s_9f92f64c7e3feb::t_6afc0e58a7aea5 25
+  s_9f92f64c7e3feb::t_6ec6e5c2480b68 173-245
+  s_9f92f64c7e3feb::t_3fc6f63b07473f 29
+  s_9f92f64c7e3feb::t_8dfa6183bb47e1 265-282,284-286
+  s_9f92f64c7e3feb::t_da3f294b71c84b 283
+  s_9f92f64c7e3feb::t_40d4db38c0c158 287
+src/renderer/src/store/useSchedulesStore.ts
+  s_9f92f64c7e3feb::t_f4076797670481 1-68
+package.json
+  s_9f92f64c7e3feb::t_aba97a080efbdc 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "092a460a0b94900ac08aef2d6c72eb28dbf245a4",
+  "prompts": {},
+  "sessions": {
+    "s_9f92f64c7e3feb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ff0320659ffeJjQvGbCczUJwaD",
+        "model": "mimo-v2.5"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
