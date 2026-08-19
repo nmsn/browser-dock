@@ -264,6 +264,7 @@ export default function SchedulesPage() {
                   <TableHead>Cron</TableHead>
                   <TableHead>账号数</TableHead>
                   <TableHead>并发</TableHead>
+                  <TableHead>下次运行</TableHead>
                   <TableHead>状态</TableHead>
                   <TableHead className="text-right">操作</TableHead>
                 </TableRow>
@@ -280,6 +281,11 @@ export default function SchedulesPage() {
                     <TableCell className="font-mono text-xs">{schedule.cronExpression}</TableCell>
                     <TableCell>{schedule.accountIds.length}</TableCell>
                     <TableCell>{schedule.maxConcurrency}</TableCell>
+                    <TableCell>
+                      {schedule.nextRunAt
+                        ? new Date(schedule.nextRunAt).toLocaleString('zh-CN')
+                        : '—'}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Switch

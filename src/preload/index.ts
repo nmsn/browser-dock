@@ -6,7 +6,9 @@ import type {
   CreateTaskInput,
   Task,
   CreateScheduleInput,
-  Schedule
+  Schedule,
+  ExecutionLog,
+  ExecutionStatus
 } from '../shared/types'
 
 /**
@@ -55,7 +57,23 @@ const api: DockAPI = {
   executionRun: (taskId: string, accountIds: string[]) =>
     ipcRenderer.invoke('execution:run', taskId, accountIds),
   executionList: (filter?: { accountId?: string; taskId?: string; status?: string; limit?: number }) =>
-    ipcRenderer.invoke('execution:list', filter ?? {})
+    ipcRenderer.invoke('execution:list', filter ?? {}),
+  executionCancel: (executionId: string) =>
+    ipcRenderer.invoke('execution:cancel', executionId),
+  executionExportCsv: () => ipcRenderer.invoke('execution:export-csv'),
+
+  // 执行事件订阅（文档 11.3 实时状态）
+  onExecutionStatus: (callback: (status: ExecutionStatus, log: Partial<ExecutionLog>) => void) => {
+    const handler = (_e: unknown, payload: { status: ExecutionStatus; log: Partial<ExecutionLog> }) =>
+      callback(payload.status, payload.log)
+    ipcRenderer.on('execution:status', handler)
+    return () => ipcRenderer.removeListener('execution:status', handler)
+  },
+  onExecutionLog: (callback: (log: ExecutionLog) => void) => {
+    const handler = (_e: unknown, log: ExecutionLog) => callback(log)
+    ipcRenderer.on('execution:log', handler)
+    return () => ipcRenderer.removeListener('execution:log', handler)
+  }
 }
 
 if (process.contextIsolated) {

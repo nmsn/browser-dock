@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { RefreshCw } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { RefreshCw, XCircle, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -57,6 +57,18 @@ export default function ExecutionPage() {
     useTasksStore.getState().load()
     useAccountsStore.getState().load()
     load()
+
+    // 实时订阅执行状态（文档 11.3）
+    const offStatus = window.dock.onExecutionStatus((status, log) => {
+      useExecutionStore.getState().handleEvent(status, log)
+    })
+    const offLog = window.dock.onExecutionLog((log) => {
+      useExecutionStore.getState().handleLog(log)
+    })
+    return () => {
+      offStatus()
+      offLog()
+    }
   }, [load])
 
   const taskName = (id: string) => tasks.find((t) => t.id === id)?.name ?? id
@@ -69,10 +81,22 @@ export default function ExecutionPage() {
           <h1 className="text-3xl font-bold tracking-tight">执行监控</h1>
           <p className="text-muted-foreground">任务执行日志与状态</p>
         </div>
-        <Button variant="outline" onClick={load} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          刷新
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={async () => {
+              const { path } = await window.dock.executionExportCsv()
+              if (path) alert(`已导出到：${path}`)
+            }}
+          >
+            <Download className="h-4 w-4" />
+            导出 CSV
+          </Button>
+          <Button variant="outline" onClick={load} disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            刷新
+          </Button>
+        </div>
       </div>
 
       {/* 筛选器（文档 11.3 / 执行历史支持按账号、任务、状态、时间筛选） */}
@@ -156,11 +180,13 @@ export default function ExecutionPage() {
                   <TableHead>耗时</TableHead>
                   <TableHead>开始时间</TableHead>
                   <TableHead>错误</TableHead>
+                  <TableHead className="text-right">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {logs.map((log) => {
                   const status = statusMap[log.status] ?? statusMap.queued
+                  const cancellable = ['queued', 'starting', 'launching-browser', 'connecting-cdp', 'checking-login', 'waiting-page', 'running', 'waiting-user', 'retrying'].includes(log.status)
                   return (
                     <TableRow key={log.id}>
                       <TableCell className="font-medium">{accountName(log.accountId)}</TableCell>
@@ -171,7 +197,22 @@ export default function ExecutionPage() {
                       <TableCell>{formatDuration(log.duration)}</TableCell>
                       <TableCell>{new Date(log.startedAt).toLocaleString('zh-CN')}</TableCell>
                       <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">
-                        {log.error ?? (log.status === 'success' ? '—' : '—')}
+                        {log.error ?? '—'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {cancellable && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            title="取消任务"
+                            onClick={async () => {
+                              window.dock.executionCancel(log.id)
+                            }}
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   )

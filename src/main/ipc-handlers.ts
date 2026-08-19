@@ -27,6 +27,9 @@ import { startChromeForAccount, stopChromeForAccount, getRuntime, listRuntimes }
 import { createPageCdpClient } from './chrome/cdp-client'
 import { startLogin, waitForLoginComplete } from './automation/taobao/login'
 import { registerSchedule, unregisterSchedule, runTaskNow } from './scheduler/service'
+import { getNextRunTime } from './scheduler/cron-scheduler'
+import { cancelExecution } from './cancel-registry'
+import { exportExecutionLogsCsv } from './log-export'
 import { PROFILES_PATH, DEFAULT_CONFIG } from './config'
 import type {
   CreateAccountInput,
@@ -208,7 +211,12 @@ export function registerIpcHandlers(): void {
   })
 
   // ============ 调度管理（文档 2.3.1 / 5.2）============
-  ipcMain.handle('schedules:list', () => dbListSchedules())
+  ipcMain.handle('schedules:list', () => {
+    return dbListSchedules().map((s) => ({
+      ...s,
+      nextRunAt: getNextRunTime(s)?.toISOString() ?? s.nextRunAt
+    }))
+  })
 
   ipcMain.handle('schedules:create', (_event, input: CreateScheduleInput) => {
     if (!input || typeof input !== 'object') throw new Error('Invalid schedule input')
@@ -287,6 +295,20 @@ export function registerIpcHandlers(): void {
       status: status as Parameters<typeof listExecutionLogs>[0]['status'],
       limit
     })
+  })
+
+  // 取消执行（文档 8.3 任务取消支持 AbortSignal）
+  ipcMain.handle('execution:cancel', (_event, executionId: string) => {
+    if (typeof executionId !== 'string' || !executionId) throw new Error('executionId is required')
+    const cancelled = cancelExecution(executionId)
+    if (cancelled) logger.info({ executionId }, 'Execution cancelled via IPC')
+    return { cancelled }
+  })
+
+  // 导出执行日志（9.3 过滤敏感信息）
+  ipcMain.handle('execution:export-csv', async () => {
+    const path = await exportExecutionLogsCsv()
+    return { path }
   })
 
   logger.info('IPC handlers registered')

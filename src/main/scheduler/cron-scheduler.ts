@@ -1,5 +1,7 @@
 import cron, { type ScheduledTask } from 'node-cron'
+import { CronExpressionParser } from 'cron-parser'
 import type { Schedule } from '../../shared/types'
+import logger from '../logger'
 
 /**
  * Cron 调度器
@@ -78,7 +80,13 @@ export function isScheduleRunning(scheduleId: string): boolean {
  * 计算下次触发时间
  */
 export function getNextRunTime(schedule: Schedule): Date | null {
-  // node-cron 没有内置 API，需要另行计算
-  // Phase 3: 可使用 cron-parser 库
-  return null
+  try {
+    const interval = CronExpressionParser.parse(schedule.cronExpression, {
+      tz: schedule.timezone
+    })
+    return interval.next().toDate()
+  } catch (err) {
+    logger.warn({ cronExpression: schedule.cronExpression, scheduleId: schedule.id, err }, 'Failed to compute next run time')
+    return null
+  }
 }

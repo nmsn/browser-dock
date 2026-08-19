@@ -422,6 +422,12 @@ export interface DockAPI {
   // 任务执行（文档 2.6.2）
   executionRun: (taskId: string, accountIds: string[]) => Promise<{ queued: number }>
   executionList: (filter?: ExecutionLogFilter) => Promise<ExecutionLog[]>
+  executionCancel: (executionId: string) => Promise<{ cancelled: boolean }>
+  executionExportCsv: () => Promise<{ path: string | null }>
+
+  // 执行事件订阅（文档 11.3 实时状态）
+  onExecutionStatus: (callback: (status: ExecutionStatus, log: Partial<ExecutionLog>) => void) => () => void
+  onExecutionLog: (callback: (log: ExecutionLog) => void) => () => void
 }
 
 /**
