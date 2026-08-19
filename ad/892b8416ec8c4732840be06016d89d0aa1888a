@@ -1,0 +1,20 @@
+docs/project-architecture-design.md
+  s_9f92f64c7e3feb::t_1410ba2eefd9a3 995-1088
+  s_9f92f64c7e3feb::t_b7c97aefac49df 523-526,528,530-533
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "ad892b8416ec8c4732840be06016d89d0aa1888a",
+  "prompts": {},
+  "sessions": {
+    "s_9f92f64c7e3feb": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_ff0320659ffeJjQvGbCczUJwaD",
+        "model": "mimo-v2.5"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
