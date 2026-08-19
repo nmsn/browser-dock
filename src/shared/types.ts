@@ -420,8 +420,18 @@ export interface DockAPI {
   schedulesDelete: (id: string) => Promise<boolean>
 
   // 任务执行（文档 2.6.2）
-  executionRun: (accountId: string, taskId: string) => Promise<{ queued: boolean }>
-  executionList: () => Promise<ExecutionLog[]>
+  executionRun: (taskId: string, accountIds: string[]) => Promise<{ queued: number }>
+  executionList: (filter?: ExecutionLogFilter) => Promise<ExecutionLog[]>
+}
+
+/**
+ * 执行日志筛选
+ */
+export interface ExecutionLogFilter {
+  accountId?: string
+  taskId?: string
+  status?: ExecutionStatus
+  limit?: number
 }
 
 /**

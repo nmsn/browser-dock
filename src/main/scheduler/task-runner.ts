@@ -47,6 +47,22 @@ export async function dispatchSchedule(
 }
 
 /**
+ * 手动执行：以指定并发度运行多个账号（不依赖 schedule 批次的防重入机制）
+ */
+export async function runWithConcurrency(
+  accounts: Account[],
+  maxConcurrency: number,
+  runner: (account: Account) => Promise<void>
+): Promise<void> {
+  const queue = accounts.filter((a) => !accountLocks.has(a.id))
+  const workers: Array<Promise<void>> = []
+  for (let i = 0; i < Math.min(Math.max(1, maxConcurrency), queue.length); i++) {
+    workers.push(worker(queue, runner))
+  }
+  await Promise.all(workers)
+}
+
+/**
  * 并发池：执行多个账号的任务
  */
 async function runForAccounts(

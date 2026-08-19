@@ -6,8 +6,9 @@ import { initializeDatabase, closeDatabase } from './store/database'
 import { registerIpcHandlers } from './ipc-handlers'
 import { scanStaleChromeProcesses } from './chrome/manager'
 import { clearAllAccountLocks, isAccountLocked } from './store/account-locks'
-import { stopAllSchedules } from './scheduler/cron-scheduler'
+import { initScheduler, stopAllSchedules } from './scheduler/service'
 import { executeTask } from './scheduler/task-executor'
+import { runTaskNow } from './scheduler/service'
 import { createAccount as dbCreateAccount } from './store/accounts'
 import { createTask as dbCreateTask } from './store/tasks'
 import type { Account, Task } from '../shared/types'
@@ -60,6 +61,9 @@ function bootstrap(): void {
   // 数据库初始化
   initializeDatabase()
   registerIpcHandlers()
+
+  // 调度器初始化（注册所有启用的 cron 任务，文档 5.2）
+  initScheduler()
 }
 
 // 单实例锁
@@ -147,6 +151,24 @@ async function runSmokeTest(): Promise<void> {
     // 账号锁应已释放
     const locked = isAccountLocked(account.id)
     step('Lock released', !locked)
+
+    // 多账号并行执行验证（文档 5.3 不同账号可以并行执行）
+    try {
+      const account2: Account = {
+        id: `smoke-account-2-${Date.now()}`,
+        name: '冒烟账号2',
+        taobaoUsername: 'smoke2@test.local',
+        profilePath: join(app.getPath('userData'), `smoke-profile2-${Date.now()}`),
+        notes: '',
+        createdAt: new Date().toISOString(),
+        loginStatus: 'unknown'
+      }
+      dbCreateAccount(account2)
+      const count = await runTaskNow(task.id, [account.id, account2.id], 2)
+      step(`runTaskNow: executed ${count}/2 accounts`, count === 2)
+    } catch (err) {
+      step(`runTaskNow threw: ${err instanceof Error ? err.message : String(err)}`, false)
+    }
   } catch (err) {
     step(`executor threw: ${err instanceof Error ? err.message : String(err)}`, false)
   }

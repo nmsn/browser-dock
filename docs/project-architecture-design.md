@@ -512,11 +512,11 @@ export async function startLive(cdpClient: CdpClient, accountId: string): Promis
 ### Phase 3：定时调度（1-2 周）
 
 - [x] Cron 调度器
-- [ ] 多账号并行执行
+- [x] 多账号并行执行
 - [x] 账号锁、并发池和任务状态机
 - [x] 超时、取消和有限重试
 - [x] 执行日志系统
-- [ ] 执行监控 UI
+- [x] 执行监控 UI
 
 ### Phase 4：优化完善（持续）
 

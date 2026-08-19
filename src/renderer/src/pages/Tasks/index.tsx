@@ -154,7 +154,7 @@ function DeleteTaskDialog({ taskId, taskName }: { taskId: string; taskName: stri
 function RunTaskDialog({ taskId, taskName }: { taskId: string; taskName: string }) {
   const accounts = useAccountsStore((s) => s.accounts)
   const [open, setOpen] = useState(false)
-  const [accountId, setAccountId] = useState('')
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [running, setRunning] = useState(false)
   const [result, setResult] = useState<string | null>(null)
 
@@ -164,13 +164,19 @@ function RunTaskDialog({ taskId, taskName }: { taskId: string; taskName: string 
     }
   }, [open, accounts.length])
 
+  const toggleAccount = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
+    )
+  }
+
   const handleRun = async () => {
-    if (!accountId) return
+    if (selectedIds.length === 0) return
     setRunning(true)
     setResult(null)
     try {
-      await window.dock.executionRun(accountId, taskId)
-      setResult('已加入执行队列，可在「执行监控」查看进度')
+      const { queued } = await window.dock.executionRun(taskId, selectedIds)
+      setResult(`已加入执行队列：${queued} 个账号，可在「执行监控」查看进度`)
     } catch (err) {
       setResult(`执行失败：${(err as Error).message}`)
     } finally {
@@ -190,15 +196,24 @@ function RunTaskDialog({ taskId, taskName }: { taskId: string; taskName: string 
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label>目标账号</Label>
-            <Select value={accountId} onChange={(e) => setAccountId(e.target.value)} disabled={accounts.length === 0}>
-              <option value="">{accounts.length === 0 ? '请先创建账号' : '选择账号...'}</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </Select>
+            <Label>目标账号（多选，并行执行）</Label>
+            {accounts.length === 0 ? (
+              <p className="text-xs text-muted-foreground">请先在「账号管理」创建账号</p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {accounts.map((a) => (
+                  <Button
+                    key={a.id}
+                    type="button"
+                    size="sm"
+                    variant={selectedIds.includes(a.id) ? 'default' : 'outline'}
+                    onClick={() => toggleAccount(a.id)}
+                  >
+                    {a.name}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
           {result && (
             <p className="text-sm text-muted-foreground">{result}</p>
@@ -206,7 +221,10 @@ function RunTaskDialog({ taskId, taskName }: { taskId: string; taskName: string 
         </div>
         <DialogFooter>
           <DialogClose render={<Button variant="outline" />}>关闭</DialogClose>
-          <Button onClick={handleRun} disabled={running || !accountId}>
+          <Button
+            onClick={handleRun}
+            disabled={running || selectedIds.length === 0}
+          >
             {running ? '执行中...' : '执行'}
           </Button>
         </DialogFooter>

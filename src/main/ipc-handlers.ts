@@ -26,7 +26,7 @@ import { listExecutionLogs } from './store/logs'
 import { startChromeForAccount, stopChromeForAccount, getRuntime, listRuntimes } from './chrome/manager'
 import { createPageCdpClient } from './chrome/cdp-client'
 import { startLogin, waitForLoginComplete } from './automation/taobao/login'
-import { executeTask } from './scheduler/task-executor'
+import { registerSchedule, unregisterSchedule, runTaskNow } from './scheduler/service'
 import { PROFILES_PATH, DEFAULT_CONFIG } from './config'
 import type {
   CreateAccountInput,
@@ -227,19 +227,25 @@ export function registerIpcHandlers(): void {
       maxConcurrency: input.maxConcurrency ?? DEFAULT_CONFIG.maxConcurrency
     })
     logger.info({ scheduleId: schedule.id }, 'Schedule created')
+    registerSchedule(schedule)
     return schedule
   })
 
   ipcMain.handle('schedules:update', (_event, id: string, patch: Partial<CreateScheduleInput>) => {
     if (typeof id !== 'string' || !id) throw new Error('Schedule id is required')
     if (!patch || typeof patch !== 'object') throw new Error('Invalid schedule patch')
-    return dbUpdateSchedule(id, patch)
+    const updated = dbUpdateSchedule(id, patch)
+    if (updated) registerSchedule(updated)
+    return updated
   })
 
   ipcMain.handle('schedules:delete', (_event, id: string) => {
     if (typeof id !== 'string' || !id) throw new Error('Schedule id is required')
     const deleted = dbDeleteSchedule(id)
-    if (deleted) logger.info({ scheduleId: id }, 'Schedule deleted')
+    if (deleted) {
+      unregisterSchedule(id)
+      logger.info({ scheduleId: id }, 'Schedule deleted')
+    }
     return deleted
   })
 
@@ -263,26 +269,24 @@ export function registerIpcHandlers(): void {
   })
 
   // ============ 任务执行（文档 2.6.2 定时任务执行流程 / 手工触发）============
-  ipcMain.handle('execution:run', async (_event, accountId: string, taskId: string) => {
-    if (typeof accountId !== 'string' || typeof taskId !== 'string') {
-      throw new Error('accountId and taskId are required')
+  ipcMain.handle('execution:run', async (_event, taskId: string, accountIds: string[]) => {
+    if (typeof taskId !== 'string') throw new Error('taskId is required')
+    if (!Array.isArray(accountIds) || accountIds.length === 0) {
+      throw new Error('At least one account is required')
     }
-    const account = dbListAccounts().find((a) => a.id === accountId)
-    const task = dbListTasks().find((t) => t.id === taskId)
-    if (!account) throw new Error('ACCOUNT_NOT_FOUND')
-    if (!task) throw new Error('TASK_NOT_FOUND')
-
-    // 后台执行，不阻塞 IPC 返回
-    executeTask(account, task)
-      .then(() => logger.info({ accountId, taskId }, 'Manual execution finished'))
-      .catch((err) => logger.error({ accountId, taskId, err }, 'Manual execution failed'))
-
-    return { queued: true }
+    const count = await runTaskNow(taskId, accountIds, DEFAULT_CONFIG.maxConcurrency)
+    return { queued: count }
   })
 
   // 执行日志列表（用于执行监控页）
-  ipcMain.handle('execution:list', () => {
-    return listExecutionLogs({ limit: 50 })
+  ipcMain.handle('execution:list', (_event, filter?: { accountId?: string; taskId?: string; status?: string; limit?: number }) => {
+    const { accountId, taskId, status, limit } = filter ?? {}
+    return listExecutionLogs({
+      accountId,
+      taskId,
+      status: status as Parameters<typeof listExecutionLogs>[0]['status'],
+      limit
+    })
   })
 
   logger.info('IPC handlers registered')

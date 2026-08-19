@@ -52,9 +52,10 @@ const api: DockAPI = {
   schedulesDelete: (id: string) => ipcRenderer.invoke('schedules:delete', id),
 
   // 任务执行
-  executionRun: (accountId: string, taskId: string) =>
-    ipcRenderer.invoke('execution:run', accountId, taskId),
-  executionList: () => ipcRenderer.invoke('execution:list')
+  executionRun: (taskId: string, accountIds: string[]) =>
+    ipcRenderer.invoke('execution:run', taskId, accountIds),
+  executionList: (filter?: { accountId?: string; taskId?: string; status?: string; limit?: number }) =>
+    ipcRenderer.invoke('execution:list', filter ?? {})
 }
 
 if (process.contextIsolated) {
