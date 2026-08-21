@@ -14,6 +14,9 @@ import { executeTask } from './scheduler/task-executor'
 import { runTaskNow } from './scheduler/service'
 import { createAccount as dbCreateAccount } from './store/accounts'
 import { createTask as dbCreateTask } from './store/tasks'
+import { getTask } from './store/tasks'
+import { backupDatabase } from './store/backup'
+import { restoreDatabaseFromBackup } from './store/restore'
 import type { Account, Task } from '../shared/types'
 
 let mainWindow: BrowserWindow | null = null
@@ -181,6 +184,23 @@ async function runSmokeTest(): Promise<void> {
     // 账号锁应已释放
     const locked = isAccountLocked(account.id)
     step('Lock released', !locked)
+
+    // 数据库备份与恢复（文档 13.2）：恢复后应回退到备份点
+    try {
+      const backupPath = backupDatabase('smoke')
+      const postBackupTask: Task = {
+        ...task,
+        id: `smoke-task-postbackup-${Date.now()}`,
+        name: '备份后任务'
+      }
+      dbCreateTask(postBackupTask)
+      restoreDatabaseFromBackup(backupPath)
+      const rolledBack = getTask(postBackupTask.id) === null
+      const originalKept = getTask(task.id) !== null
+      step(`Restore: rollback ok (kept=${originalKept})`, rolledBack && originalKept)
+    } catch (err) {
+      step(`Restore threw: ${err instanceof Error ? err.message : String(err)}`, false)
+    }
 
     // 多账号并行执行验证（文档 5.3 不同账号可以并行执行）
     try {

@@ -25,10 +25,13 @@ import {
 import { listExecutionLogs } from './store/logs'
 import { listDiagnostics, getDiagnostic } from './store/diagnostics'
 import { getSettings, updateSettings, applyLaunchAtLogin } from './store/settings'
+import { listBackups, backupDatabase } from './store/backup'
+import { restoreDatabaseFromBackup } from './store/restore'
+import { statSync } from 'fs'
 import { startChromeForAccount, stopChromeForAccount, getRuntime, listRuntimes } from './chrome/manager'
 import { createPageCdpClient } from './chrome/cdp-client'
 import { startLogin, waitForLoginComplete } from './automation/taobao/login'
-import { registerSchedule, unregisterSchedule, runTaskNow } from './scheduler/service'
+import { registerSchedule, unregisterSchedule, runTaskNow, syncAllSchedules } from './scheduler/service'
 import { getNextRunTime } from './scheduler/cron-scheduler'
 import { cancelExecution } from './cancel-registry'
 import { exportExecutionLogsCsv } from './log-export'
@@ -364,6 +367,32 @@ export function registerIpcHandlers(): void {
       applyLaunchAtLogin(next.launchAtLogin)
     }
     return next
+  })
+
+  // 数据库备份与恢复（文档 13.2）
+  ipcMain.handle('backups:list', () => {
+    return listBackups().map((b) => ({
+      path: b.path,
+      size: b.size,
+      modifiedAt: b.modifiedAt.toISOString()
+    }))
+  })
+
+  ipcMain.handle('backups:create', () => {
+    const path = backupDatabase('manual')
+    const stat = statSync(path)
+    logger.info({ path }, 'Manual backup created via IPC')
+    return { path, size: stat.size, modifiedAt: stat.mtime.toISOString() }
+  })
+
+  ipcMain.handle('backups:restore', (_event, backupPath: string) => {
+    if (typeof backupPath !== 'string' || !backupPath) {
+      throw new Error('Backup path is required')
+    }
+    restoreDatabaseFromBackup(backupPath)
+    // 恢复后的调度可能与备份前不同，全量重新注册（5.2）
+    syncAllSchedules()
+    return true
   })
 
   logger.info('IPC handlers registered')

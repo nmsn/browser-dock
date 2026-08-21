@@ -10,7 +10,8 @@ import type {
   ExecutionLog,
   ExecutionStatus,
   PageDiagnostic,
-  UpdateSettingsInput
+  UpdateSettingsInput,
+  BackupInfo
 } from '../shared/types'
 
 /**
@@ -72,6 +73,11 @@ const api: DockAPI = {
   // 应用设置
   settingsGet: () => ipcRenderer.invoke('settings:get'),
   settingsUpdate: (patch: UpdateSettingsInput) => ipcRenderer.invoke('settings:update', patch),
+
+  // 数据库备份与恢复
+  backupsList: () => ipcRenderer.invoke('backups:list'),
+  backupsCreate: () => ipcRenderer.invoke('backups:create'),
+  backupsRestore: (backupPath: string) => ipcRenderer.invoke('backups:restore', backupPath),
 
   // 执行事件订阅（文档 11.3 实时状态）
   onExecutionStatus: (callback: (status: ExecutionStatus, log: Partial<ExecutionLog>) => void) => {

@@ -1,11 +1,21 @@
-import { useEffect, useState } from 'react'
-import { Save, RefreshCw } from 'lucide-react'
+import { useEffect, useState, useCallback } from 'react'
+import { Save, RefreshCw, DatabaseBackup, ArchiveRestore } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
 import { useSettingsStore } from '@/store/useSettingsStore'
+import type { BackupInfo } from '../../../../shared/types'
 
 /**
  * 设置页面
@@ -59,6 +69,115 @@ function SwitchField(props: {
       </div>
       <Switch checked={props.checked} onCheckedChange={props.onCheckedChange} />
     </div>
+  )
+}
+
+function BackupCard() {
+  const [backups, setBackups] = useState<BackupInfo[]>([])
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [restoreTarget, setRestoreTarget] = useState<BackupInfo | null>(null)
+
+  const refresh = useCallback(async () => {
+    try {
+      setBackups(await window.dock.backupsList())
+    } catch (err) {
+      setMessage(`加载备份失败：${(err as Error).message}`)
+    }
+  }, [])
+
+  useEffect(() => {
+    refresh()
+  }, [refresh])
+
+  const handleCreate = async () => {
+    setBusy(true)
+    setMessage(null)
+    try {
+      await window.dock.backupsCreate()
+      setMessage('备份已创建')
+      await refresh()
+    } catch (err) {
+      setMessage(`备份失败：${(err as Error).message}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleRestore = async () => {
+    if (!restoreTarget) return
+    setBusy(true)
+    setMessage(null)
+    try {
+      await window.dock.backupsRestore(restoreTarget.path)
+      setMessage(`已恢复到 ${new Date(restoreTarget.modifiedAt).toLocaleString('zh-CN')} 的备份`)
+      setRestoreTarget(null)
+    } catch (err) {
+      setMessage(`恢复失败：${(err as Error).message}`)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>备份与恢复</CardTitle>
+            <CardDescription>数据库快照（保留最近 7 份），恢复后调度自动重新注册</CardDescription>
+          </div>
+          <Button variant="outline" onClick={handleCreate} disabled={busy}>
+            <DatabaseBackup className="h-4 w-4" />
+            立即备份
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {message && <p className="text-sm text-muted-foreground">{message}</p>}
+        {backups.length === 0 ? (
+          <p className="text-sm text-muted-foreground">暂无备份，点击「立即备份」创建</p>
+        ) : (
+          <div className="space-y-2">
+            {backups.map((b) => (
+              <div
+                key={b.path}
+                className="flex items-center justify-between rounded-lg border px-4 py-2"
+              >
+                <div>
+                  <p className="text-sm">{new Date(b.modifiedAt).toLocaleString('zh-CN')}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {(b.size / 1024).toFixed(1)} KB · {b.path.split('/').pop()}
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setRestoreTarget(b)} disabled={busy}>
+                  <ArchiveRestore className="h-4 w-4" />
+                  恢复
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Dialog open={restoreTarget !== null} onOpenChange={(o) => !o && setRestoreTarget(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>恢复数据库</DialogTitle>
+              <DialogDescription>
+                确认恢复到 {restoreTarget && new Date(restoreTarget.modifiedAt).toLocaleString('zh-CN')}{' '}
+                的备份？当前数据会先自动备份一份（pre-restore）。
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose render={<Button variant="outline" />}>取消</DialogClose>
+              <Button onClick={handleRestore} disabled={busy}>
+                {busy ? '恢复中...' : '确认恢复'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -202,6 +321,8 @@ export default function SettingsPage() {
           />
         </CardContent>
       </Card>
+
+      <BackupCard />
     </div>
   )
 }

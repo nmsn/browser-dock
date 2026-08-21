@@ -403,6 +403,16 @@ export interface AppSettings {
 export type UpdateSettingsInput = Partial<AppSettings>
 
 /**
+ * 数据库备份信息
+ * @see 文档 13.2 / 9.3
+ */
+export interface BackupInfo {
+  path: string
+  size: number
+  modifiedAt: string
+}
+
+/**
  * 创建账号输入
  * id 由主进程生成，createdAt/loginStatus 由主进程初始化
  */
@@ -462,6 +472,11 @@ export interface DockAPI {
   // 应用设置（文档 2.3.1 设置）
   settingsGet: () => Promise<AppSettings>
   settingsUpdate: (patch: UpdateSettingsInput) => Promise<AppSettings>
+
+  // 数据库备份与恢复（文档 13.2）
+  backupsList: () => Promise<BackupInfo[]>
+  backupsCreate: () => Promise<BackupInfo>
+  backupsRestore: (backupPath: string) => Promise<boolean>
 
   // 执行事件订阅（文档 11.3 实时状态）
   onExecutionStatus: (callback: (status: ExecutionStatus, log: Partial<ExecutionLog>) => void) => () => void
