@@ -161,6 +161,23 @@ async function runSmokeTest(): Promise<void> {
     const execution = await executeTask(account, task)
     step(`Executor: status=${execution.status}`, execution.status === 'success')
 
+    // 脚本 API 白名单（文档 9.2）：未授权 API 应抛 TK_API_NOT_ALLOWED
+    try {
+      const restrictedTask: Task = {
+        ...task,
+        id: `smoke-task-restricted-${Date.now()}`,
+        name: '冒烟受限任务',
+        allowedApis: ['logger.info'],
+        script: `await ctx.page.navigate('about:blank');`
+      }
+      dbCreateTask(restrictedTask)
+      await executeTask(account, restrictedTask)
+      step('API guard: no error thrown', false)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      step(`API guard: ${message.slice(0, 50)}`, message.includes('TK_API_NOT_ALLOWED'))
+    }
+
     // 账号锁应已释放
     const locked = isAccountLocked(account.id)
     step('Lock released', !locked)

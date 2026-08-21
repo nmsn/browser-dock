@@ -187,6 +187,18 @@ const MIGRATIONS: Migration[] = [
       );
       CREATE INDEX idx_diagnostics_execution ON page_diagnostics(execution_id);
     `
+  },
+  {
+    version: 3,
+    name: 'task_allowed_apis_and_perf_indexes',
+    sql: `
+      -- 任务级脚本 API 白名单（文档 9.2），NULL 表示允许全部白名单 API
+      ALTER TABLE tasks ADD COLUMN allowed_apis TEXT;
+
+      -- 性能索引：保留期清理与执行日志列表按时间过滤/排序
+      CREATE INDEX idx_execution_logs_started_at ON execution_logs(started_at);
+      CREATE INDEX idx_diagnostics_captured_at ON page_diagnostics(captured_at);
+    `
   }
 ]
 

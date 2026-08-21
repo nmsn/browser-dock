@@ -6,6 +6,7 @@ import type {
   AutomationContext,
   ExecutionLog,
   ExecutionStatus,
+  ScriptApi,
   StateTransition,
   Task
 } from '../../shared/types'
@@ -117,7 +118,7 @@ export async function executeTask(
 
     // 受限沙箱执行（9.2 脚本权限边界），带有限重试（8.3 重试原则）
     await runWithRetry(
-      () => runScript(task.script, context, timeoutMs),
+      () => runScript(task.script, context, timeoutMs, task.allowedApis),
       task.retryPolicy?.maxAttempts ?? 1,
       task.retryPolicy?.backoffMs ?? 5000,
       {
@@ -177,30 +178,51 @@ export async function executeTask(
  * @see 文档 9.2 脚本权限边界
  *
  * 仅暴露 context 中的白名单对象，不注入 Node 全局、fs、child_process 等。
+ * allowedApis 为任务级白名单（undefined = 允许全部白名单 API），
+ * 未授权的 API 调用抛出 TK_API_NOT_ALLOWED。
  * 用 vm 的 timeout 做硬超时保护。
  */
 function runScript(
   script: string,
   context: AutomationContext,
-  timeoutMs: number
+  timeoutMs: number,
+  allowedApis?: ScriptApi[]
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     try {
+      const allowed = allowedApis === undefined ? null : new Set<string>(allowedApis)
+
+      // 未授权的 API 替换为抛错函数（9.2 任务级白名单）
+      const guard = <A extends unknown[], R>(
+        api: ScriptApi,
+        fn: (...args: A) => R
+      ): ((...args: A) => R) => {
+        if (allowed === null || allowed.has(api)) return fn
+        return (..._args: A): R => {
+          throw new Error(`TK_API_NOT_ALLOWED: ${api} is not permitted for this task`)
+        }
+      }
+
       // 白名单 API（文档 9.2），全部用闭包包装，跨 vm 边界安全
       const page = {
-        navigate: (...a: Parameters<typeof context.page.navigate>) => context.page.navigate(...a),
-        waitForSelector: (...a: Parameters<typeof context.page.waitForSelector>) => context.page.waitForSelector(...a),
-        click: (...a: Parameters<typeof context.page.click>) => context.page.click(...a),
-        input: (...a: Parameters<typeof context.page.input>) => context.page.input(...a),
-        evaluate: (...a: Parameters<typeof context.page.evaluate>) => context.page.evaluate(...a),
-        screenshot: (...a: Parameters<typeof context.page.screenshot>) => context.page.screenshot(...a)
+        navigate: guard('page.navigate', (...a: Parameters<typeof context.page.navigate>) => context.page.navigate(...a)),
+        waitForSelector: guard('page.waitForSelector', (...a: Parameters<typeof context.page.waitForSelector>) => context.page.waitForSelector(...a)),
+        click: guard('page.click', (...a: Parameters<typeof context.page.click>) => context.page.click(...a)),
+        input: guard('page.input', (...a: Parameters<typeof context.page.input>) => context.page.input(...a)),
+        evaluate: guard('page.evaluate', (...a: Parameters<typeof context.page.evaluate>) => context.page.evaluate(...a)),
+        screenshot: guard('page.screenshot', (...a: Parameters<typeof context.page.screenshot>) => context.page.screenshot(...a))
       }
       const storage = {
-        get: (...a: Parameters<typeof context.storage.get>) => context.storage.get(...a),
-        set: (...a: Parameters<typeof context.storage.set>) => context.storage.set(...a),
-        delete: (...a: Parameters<typeof context.storage.delete>) => context.storage.delete(...a)
+        get: guard('storage.get', (...a: Parameters<typeof context.storage.get>) => context.storage.get(...a)),
+        set: guard('storage.set', (...a: Parameters<typeof context.storage.set>) => context.storage.set(...a)),
+        delete: guard('storage.delete', (...a: Parameters<typeof context.storage.delete>) => context.storage.delete(...a))
       }
-      const loggerApi = context.logger
+      const loggerApi = {
+        info: guard('logger.info', (...a: Parameters<typeof context.logger.info>) => context.logger.info(...a)),
+        warn: guard('logger.warn', (...a: Parameters<typeof context.logger.warn>) => context.logger.warn(...a)),
+        error: guard('logger.error', (...a: Parameters<typeof context.logger.error>) => context.logger.error(...a)),
+        debug: (...a: Parameters<typeof context.logger.debug>) => context.logger.debug(...a) // debug 不在白名单内，始终可用（仅内部日志）
+      }
       const account = context.account
 
       // 构造纯对象的 ctx（避免类实例跨 vm 边界）

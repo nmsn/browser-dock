@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/dialog'
 import { useTasksStore } from '@/store/useTasksStore'
 import { useAccountsStore } from '@/store/useAccountsStore'
-import type { TaskType } from '../../../../shared/types'
+import type { TaskType, ScriptApi } from '../../../../shared/types'
 
 /**
  * 任务管理页面
@@ -41,6 +41,70 @@ const typeMap: Record<TaskType, { label: string }> = {
   custom: { label: '自定义' }
 }
 
+/** 脚本 API 白名单分组（文档 9.2） */
+const apiGroups: Array<{ label: string; apis: ScriptApi[] }> = [
+  {
+    label: '页面操作',
+    apis: ['page.navigate', 'page.waitForSelector', 'page.click', 'page.input', 'page.evaluate', 'page.screenshot']
+  },
+  {
+    label: '任务日志',
+    apis: ['logger.info', 'logger.warn', 'logger.error']
+  },
+  {
+    label: '任务存储',
+    apis: ['storage.get', 'storage.set', 'storage.delete']
+  }
+]
+
+const ALL_APIS: ScriptApi[] = apiGroups.flatMap((g) => g.apis)
+
+function ApiPermissionSelector(props: {
+  selected: ScriptApi[]
+  onChange: (apis: ScriptApi[]) => void
+}) {
+  const toggle = (api: ScriptApi) => {
+    props.onChange(
+      props.selected.includes(api)
+        ? props.selected.filter((a) => a !== api)
+        : [...props.selected, api]
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label>脚本权限（白名单 API）</Label>
+        <Button type="button" variant="ghost" size="sm" onClick={() => props.onChange(ALL_APIS)}>
+          全部允许
+        </Button>
+      </div>
+      {apiGroups.map((group) => (
+        <div key={group.label} className="space-y-1.5">
+          <p className="text-xs font-medium text-muted-foreground">{group.label}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {group.apis.map((api) => (
+              <Button
+                key={api}
+                type="button"
+                size="sm"
+                variant={props.selected.includes(api) ? 'default' : 'outline'}
+                className="font-mono text-xs"
+                onClick={() => toggle(api)}
+              >
+                {api}
+              </Button>
+            ))}
+          </div>
+        </div>
+      ))}
+      <p className="text-xs text-muted-foreground">
+        未勾选的 API 在脚本中调用会抛出 TK_API_NOT_ALLOWED 错误
+      </p>
+    </div>
+  )
+}
+
 function CreateTaskDialog() {
   const createTask = useTasksStore((s) => s.createTask)
   const [open, setOpen] = useState(false)
@@ -48,6 +112,7 @@ function CreateTaskDialog() {
   const [type, setType] = useState<TaskType>('custom')
   const [script, setScript] = useState('')
   const [timeoutMs, setTimeoutMs] = useState('120000')
+  const [allowedApis, setAllowedApis] = useState<ScriptApi[]>(ALL_APIS)
   const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async () => {
@@ -57,7 +122,8 @@ function CreateTaskDialog() {
       name,
       type,
       script,
-      timeoutMs: Number(timeoutMs) || 120000
+      timeoutMs: Number(timeoutMs) || 120000,
+      allowedApis
     })
     setSubmitting(false)
     if (created) {
@@ -65,6 +131,7 @@ function CreateTaskDialog() {
       setType('custom')
       setScript('')
       setTimeoutMs('120000')
+      setAllowedApis(ALL_APIS)
       setOpen(false)
     }
   }
@@ -106,6 +173,7 @@ function CreateTaskDialog() {
             <Label>超时（毫秒）</Label>
             <Input value={timeoutMs} onChange={(e) => setTimeoutMs(e.target.value)} placeholder="120000" type="number" />
           </div>
+          <ApiPermissionSelector selected={allowedApis} onChange={setAllowedApis} />
         </div>
         <DialogFooter>
           <DialogClose render={<Button variant="outline" />}>取消</DialogClose>

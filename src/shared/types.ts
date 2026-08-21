@@ -93,6 +93,8 @@ export interface Task {
   type: TaskType
   script: string
   config: Record<string, unknown>
+  /** 任务级脚本 API 白名单（文档 9.2）；undefined 表示允许全部白名单 API */
+  allowedApis?: ScriptApi[]
   version: number
   timeoutMs: number
   retryPolicy: RetryPolicy
@@ -485,6 +487,7 @@ export interface CreateTaskInput {
   type: TaskType
   script: string
   config?: Record<string, unknown>
+  allowedApis?: ScriptApi[]
   timeoutMs?: number
   retryPolicy?: RetryPolicy
 }

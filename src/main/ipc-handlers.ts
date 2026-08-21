@@ -39,7 +39,8 @@ import type {
   AccountRuntime,
   CreateTaskInput,
   CreateScheduleInput,
-  UpdateSettingsInput
+  UpdateSettingsInput,
+  ScriptApi
 } from '../shared/types'
 
 /**
@@ -48,6 +49,30 @@ import type {
  * - IPC 入参在主进程重新校验，不能信任 Renderer 类型声明
  * - 不允许 Renderer 直接执行任意脚本或访问文件系统
  */
+
+/**
+ * 校验任务脚本 API 白名单（文档 9.2）
+ * 过滤未知值；undefined 保持 undefined（允许全部白名单 API）
+ */
+function normalizeAllowedApis(input: unknown): ScriptApi[] | undefined {
+  if (input === undefined) return undefined
+  if (!Array.isArray(input)) throw new Error('allowedApis must be an array')
+  const known = new Set<string>([
+    'page.navigate',
+    'page.waitForSelector',
+    'page.click',
+    'page.input',
+    'page.evaluate',
+    'page.screenshot',
+    'logger.info',
+    'logger.warn',
+    'logger.error',
+    'storage.get',
+    'storage.set',
+    'storage.delete'
+  ])
+  return input.filter((v): v is ScriptApi => typeof v === 'string' && known.has(v))
+}
 
 /**
  * 基于 Chrome 实例的调试端口启动登录流程
@@ -193,6 +218,7 @@ export function registerIpcHandlers(): void {
       type: input.type ?? 'custom',
       script: input.script,
       config: input.config ?? {},
+      allowedApis: normalizeAllowedApis(input.allowedApis),
       timeoutMs: input.timeoutMs ?? DEFAULT_CONFIG.defaultTimeoutMs,
       retryPolicy: input.retryPolicy ?? DEFAULT_CONFIG.defaultRetryPolicy
     })
@@ -203,7 +229,11 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('tasks:update', (_event, id: string, patch: Partial<CreateTaskInput>) => {
     if (typeof id !== 'string' || !id) throw new Error('Task id is required')
     if (!patch || typeof patch !== 'object') throw new Error('Invalid task patch')
-    return dbUpdateTask(id, patch)
+    const normalized: Partial<CreateTaskInput> = { ...patch }
+    if (patch.allowedApis !== undefined) {
+      normalized.allowedApis = normalizeAllowedApis(patch.allowedApis)
+    }
+    return dbUpdateTask(id, normalized)
   })
 
   ipcMain.handle('tasks:delete', (_event, id: string) => {
