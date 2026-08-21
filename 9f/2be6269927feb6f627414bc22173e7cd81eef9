@@ -1,0 +1,36 @@
+src/main/inspection.ts
+  s_dd0b2aa86c0fc5::t_05c8cd914e1851 1-108
+src/main/store/settings.ts
+  s_dd0b2aa86c0fc5::t_d1a9432a0af5b8 25-26
+  s_dd0b2aa86c0fc5::t_f61cedf6ae0149 71-73
+src/main/index.ts
+  s_dd0b2aa86c0fc5::t_5167da015383a5 275
+  s_dd0b2aa86c0fc5::t_47d96c9dbd6b3c 22
+  s_dd0b2aa86c0fc5::t_ed122bc7797e28 93-95
+  s_dd0b2aa86c0fc5::t_adb00b408ebed9 228-235
+  s_dd0b2aa86c0fc5::t_adb7a76fe8a4f1 14
+src/shared/types.ts
+  s_dd0b2aa86c0fc5::t_ed6e86b9552fc8 400-401
+src/renderer/src/pages/Settings/index.tsx
+  s_dd0b2aa86c0fc5::t_90807702afc60b 223-224
+  s_dd0b2aa86c0fc5::t_ff57d6d40fea52 330-335
+src/main/ipc-handlers.ts
+  s_dd0b2aa86c0fc5::t_b6b6e2393cfdd0 38
+  s_dd0b2aa86c0fc5::t_f6b15b88642dac 370-373
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "9f2be6269927feb6f627414bc22173e7cd81eef9",
+  "prompts": {},
+  "sessions": {
+    "s_dd0b2aa86c0fc5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fdd2bc730ffeEsHOmGebwWMjTf",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
