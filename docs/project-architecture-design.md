@@ -521,6 +521,7 @@ export async function startLive(cdpClient: CdpClient, accountId: string): Promis
 ### Phase 4：优化完善（持续）
 
 - [x] 错误重试机制
+- [x] 应用设置页（Chrome 路径、并发上限、日志/截图保留天数、通知开关、开机自启动）
 - [ ] 脚本权限策略和系统密钥环（基础密钥环已实现，待加强任务级白名单配置 UI）
 - [x] 页面变化检测和 DOM 快照
 - [x] Electron 原生模块打包验证（macOS arm64/x64 已验证通过）
@@ -977,7 +978,7 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 
 - 仅 macOS（dmg + zip）
 - 不配置代码签名和公证（Phase 1 本机自用）
-- 后续如需 Windows / Linux，扩展 electron-builder targets 即可
+- Windows 打包暂缓：electron-builder.yml 已验证过 nsis 交叉编译可行，但 `@napi-rs/keyring` 的 win32 原生模块在 macOS 上无法通过 pnpm 提升到 node_modules 根目录（`supportedArchitectures` 只装入 `.pnpm`），交叉产物运行时会缺模块；需在 Windows 环境或 CI 上原生构建
 - 后续如需分发，再配置签名和公证
 
 ### 15.5 错误码字典（草案）
@@ -1007,7 +1008,7 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 | **Phase 1** 基础框架 | ✅ 100% | Electron 初始化 / SQLite + 迁移 / 备份 / Chrome 管理 / Profile 锁 / 账号管理 UI / 登录流程 |
 | **Phase 2** 自动化引擎 | ✅ 100% | CDP 客户端 / 基础操作封装 / AutomationContext / 登录状态 + 账号身份检测 / 任务管理 UI |
 | **Phase 3** 定时调度 | ✅ 100% | Cron 调度器 / 多账号并行 / 账号锁 / 状态机 / 超时取消重试 / 执行日志 / 执行监控 UI |
-| **Phase 4** 优化完善 | 🟡 50% | 重试 ✅、DOM 快照 ✅、原生打包验证 ✅、通知 ✅、CSV 导出 ✅、实时推送 ✅、取消 ✅、下次运行时间 ✅；脚本权限 UI 待做、多平台 待做、性能 待做 |
+| **Phase 4** 优化完善 | 🟡 60% | 重试 ✅、DOM 快照 ✅、原生打包验证 ✅、通知 ✅、CSV 导出 ✅、实时推送 ✅、取消 ✅、下次运行时间 ✅、应用设置页 ✅；脚本权限 UI 待做、多平台 待做、性能 待做 |
 
 ### 16.2 关键模块映射（设计规范 → 实际代码）
 
@@ -1065,14 +1066,14 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 | 执行 | `execution:run/list/cancel/export-csv` | 任务执行与日志 |
 | 诊断 | `diagnostics:list/get` | 失败页面诊断查看 |
 | 密钥环 | `keyring:set/get/delete` | 敏感信息存储 |
+| 设置 | `settings:get/update` | 应用设置读写（Chrome 路径、并发上限、保留天数、通知、开机自启） |
 | 事件 | `execution:status` / `execution:log` | 主进程 → renderer 实时推送 |
 
 ### 16.6 后续开发路线图
 
 | 优先级 | 项目 | 文档章节 |
 |-------|------|---------|
-| 高 | 应用设置页（Chrome 路径、并发上限、日志保留、托盘） | 2.3.1 / 10.3 |
-| 高 | 多平台打包（Windows squirrel + Linux deb/rpm） | 10.2 |
+| 高 | 多平台打包（Windows nsis，暂缓——见 16.7 交叉编译限制） | 10.2 |
 | 中 | 脚本权限策略增强（任务级白名单 UI） | 9.2 |
 | 中 | 升级 / 数据迁移（备份恢复界面） | 13.2 |
 | 中 | 性能优化（启动时间、Chrome 池化、数据库索引） | Phase 4 |
@@ -1081,8 +1082,10 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 
 ### 16.7 已知限制
 
-- 仅 macOS 打包通过（Windows / Linux 待扩展 targets）
+- 仅 macOS 打包（Windows nsis 配置已验证可行但暂缓，见 15.4 交叉编译原生模块限制）
 - 无代码签名 / 公证（首启需手动「右键打开」）
 - Chrome `--disable-background-timer-throttling` 仅降低节流，不解决睡眠场景（文档 5.1 / 10.3 明确）
 - 未实现低频巡检（文档 11.2 第二段），用于提前发现页面布局变化
 - 未实现 Mihomo 集成（文档 1.2 提到「完整代理管理」，目前仅支持 `proxyConfig` 字段占位）
+- 设置页已支持开机自启动（`app.setLoginItemSettings`），开发环境未打包时会报系统权限错误（仅噪音，不影响功能）；托盘最小化行为待实现
+- 日志 / 截图保留天数已可配置，按保留期自动清理的定时任务待实现

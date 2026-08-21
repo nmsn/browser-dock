@@ -8,6 +8,7 @@ import { scanStaleChromeProcesses } from './chrome/manager'
 import { clearAllAccountLocks, isAccountLocked } from './store/account-locks'
 import { initScheduler, stopAllSchedules } from './scheduler/service'
 import { initNotifier } from './notifier'
+import { getSettings, applyLaunchAtLogin } from './store/settings'
 import { executeTask } from './scheduler/task-executor'
 import { runTaskNow } from './scheduler/service'
 import { createAccount as dbCreateAccount } from './store/accounts'
@@ -63,6 +64,12 @@ function bootstrap(): void {
   initializeDatabase()
   registerIpcHandlers()
   initNotifier()
+
+  // 应用设置：开机自启动（文档 10.3 系统能力）
+  // 仅在启用时应用，避免开发环境未打包时的系统权限报错
+  if (getSettings().launchAtLogin) {
+    applyLaunchAtLogin(true)
+  }
 
   // 调度器初始化（注册所有启用的 cron 任务，文档 5.2）
   initScheduler()

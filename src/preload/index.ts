@@ -9,7 +9,8 @@ import type {
   Schedule,
   ExecutionLog,
   ExecutionStatus,
-  PageDiagnostic
+  PageDiagnostic,
+  UpdateSettingsInput
 } from '../shared/types'
 
 /**
@@ -67,6 +68,10 @@ const api: DockAPI = {
   diagnosticsList: (executionId: string) =>
     ipcRenderer.invoke('diagnostics:list', executionId),
   diagnosticsGet: (id: string) => ipcRenderer.invoke('diagnostics:get', id),
+
+  // 应用设置
+  settingsGet: () => ipcRenderer.invoke('settings:get'),
+  settingsUpdate: (patch: UpdateSettingsInput) => ipcRenderer.invoke('settings:update', patch),
 
   // 执行事件订阅（文档 11.3 实时状态）
   onExecutionStatus: (callback: (status: ExecutionStatus, log: Partial<ExecutionLog>) => void) => {

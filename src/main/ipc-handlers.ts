@@ -24,6 +24,7 @@ import {
 } from './store/schedules'
 import { listExecutionLogs } from './store/logs'
 import { listDiagnostics, getDiagnostic } from './store/diagnostics'
+import { getSettings, updateSettings, applyLaunchAtLogin } from './store/settings'
 import { startChromeForAccount, stopChromeForAccount, getRuntime, listRuntimes } from './chrome/manager'
 import { createPageCdpClient } from './chrome/cdp-client'
 import { startLogin, waitForLoginComplete } from './automation/taobao/login'
@@ -37,7 +38,8 @@ import type {
   Account,
   AccountRuntime,
   CreateTaskInput,
-  CreateScheduleInput
+  CreateScheduleInput,
+  UpdateSettingsInput
 } from '../shared/types'
 
 /**
@@ -233,7 +235,7 @@ export function registerIpcHandlers(): void {
       timezone: input.timezone ?? 'Asia/Shanghai',
       enabled: input.enabled ?? true,
       misfirePolicy: input.misfirePolicy ?? 'skip',
-      maxConcurrency: input.maxConcurrency ?? DEFAULT_CONFIG.maxConcurrency
+      maxConcurrency: input.maxConcurrency ?? getSettings().maxConcurrency
     })
     logger.info({ scheduleId: schedule.id }, 'Schedule created')
     registerSchedule(schedule)
@@ -283,7 +285,7 @@ export function registerIpcHandlers(): void {
     if (!Array.isArray(accountIds) || accountIds.length === 0) {
       throw new Error('At least one account is required')
     }
-    const count = await runTaskNow(taskId, accountIds, DEFAULT_CONFIG.maxConcurrency)
+    const count = await runTaskNow(taskId, accountIds, getSettings().maxConcurrency)
     return { queued: count }
   })
 
@@ -321,6 +323,17 @@ export function registerIpcHandlers(): void {
   ipcMain.handle('diagnostics:get', (_event, id: string) => {
     if (typeof id !== 'string' || !id) throw new Error('diagnostic id is required')
     return getDiagnostic(id)
+  })
+
+  // 应用设置（文档 2.3.1 设置）
+  ipcMain.handle('settings:get', () => getSettings())
+
+  ipcMain.handle('settings:update', (_event, patch: UpdateSettingsInput) => {
+    const next = updateSettings(patch)
+    if (patch.launchAtLogin !== undefined) {
+      applyLaunchAtLogin(next.launchAtLogin)
+    }
+    return next
   })
 
   logger.info('IPC handlers registered')

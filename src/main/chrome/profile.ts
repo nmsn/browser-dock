@@ -52,8 +52,11 @@ export function releaseProfile(accountId: string): void {
 export function isProfileLocked(accountId: string): boolean {
   const profilePath = profileRegistry.get(accountId)
   if (!profilePath) return false
-  // Chrome 使用 SingletonLock / SingletonCookie 等文件实现单实例
-  const lockFile = join(profilePath, 'SingletonLock')
+  // Chrome 单实例锁文件：macOS/Linux 为 SingletonLock，Windows 为 lockfile
+  const lockFile = join(
+    profilePath,
+    process.platform === 'win32' ? 'lockfile' : 'SingletonLock'
+  )
   return existsSync(lockFile)
 }
 

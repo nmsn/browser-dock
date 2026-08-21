@@ -5,6 +5,7 @@ import { join } from 'path'
 import type { Account, AccountRuntime } from '../../shared/types'
 import { getOrCreateProfilePath, isProfileLocked, releaseProfile } from './profile'
 import { createCdpClient, type CdpClient } from './cdp-client'
+import { getSettings } from '../store/settings'
 import logger from '../logger'
 
 /**
@@ -206,16 +207,30 @@ async function waitForCdpAvailable(port: number, timeoutMs = 10_000): Promise<vo
 
 /**
  * 查找系统中的 Chrome 路径
- * Phase 1: 简化实现，仅检查常见位置
+ * 优先使用设置中配置的路径，否则检查各平台常见位置
  */
 function findChromePath(): string | null {
-  const candidates = [
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/Applications/Chromium.app/Contents/MacOS/Chromium',
-    join(process.env.HOME ?? '', 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
-  ]
+  const configured = getSettings().chromePath
+  if (configured && existsSync(configured)) return configured
+
+  const home = process.env.HOME ?? process.env.USERPROFILE ?? ''
+  const candidates =
+    process.platform === 'win32'
+      ? [
+          'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+          'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+          join(
+            process.env.LOCALAPPDATA ?? '',
+            'Google\\Chrome\\Application\\chrome.exe'
+          )
+        ]
+      : [
+          '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+          '/Applications/Chromium.app/Contents/MacOS/Chromium',
+          join(home, 'Applications/Google Chrome.app/Contents/MacOS/Google Chrome')
+        ]
   for (const path of candidates) {
-    if (existsSync(path)) return path
+    if (path && existsSync(path)) return path
   }
   return null
 }

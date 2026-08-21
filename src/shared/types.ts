@@ -372,6 +372,34 @@ export interface AppInfo {
   chrome: string
 }
 
+// ============================================================================
+// 应用设置
+// ============================================================================
+
+/**
+ * 应用设置（全局配置，持久化到 userData/settings.json）
+ * @see 文档 2.3.1 设置 / 10.3 应用退出和系统能力
+ */
+export interface AppSettings {
+  /** Chrome 可执行文件路径，空字符串表示自动检测 */
+  chromePath: string
+  /** 全局并发上限（同时执行的账号数） */
+  maxConcurrency: number
+  /** 执行日志保留天数 */
+  logRetentionDays: number
+  /** 截图 / DOM 快照保留天数（文档 9.3 默认 30 天） */
+  screenshotRetentionDays: number
+  /** 任务结束时发送系统通知 */
+  notifyOnExecution: boolean
+  /** 开机自启动 */
+  launchAtLogin: boolean
+}
+
+/**
+ * 设置更新输入（Partial，主进程校验）
+ */
+export type UpdateSettingsInput = Partial<AppSettings>
+
 /**
  * 创建账号输入
  * id 由主进程生成，createdAt/loginStatus 由主进程初始化
@@ -428,6 +456,10 @@ export interface DockAPI {
   // 页面诊断（文档 11.2）
   diagnosticsList: (executionId: string) => Promise<PageDiagnostic[]>
   diagnosticsGet: (id: string) => Promise<PageDiagnostic | null>
+
+  // 应用设置（文档 2.3.1 设置）
+  settingsGet: () => Promise<AppSettings>
+  settingsUpdate: (patch: UpdateSettingsInput) => Promise<AppSettings>
 
   // 执行事件订阅（文档 11.3 实时状态）
   onExecutionStatus: (callback: (status: ExecutionStatus, log: Partial<ExecutionLog>) => void) => () => void

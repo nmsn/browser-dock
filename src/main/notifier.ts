@@ -1,5 +1,6 @@
 import { Notification, app } from 'electron'
 import type { ExecutionLog } from '../../shared/types'
+import { getSettings } from './store/settings'
 
 /**
  * 执行结果通知
@@ -28,6 +29,7 @@ export function notifyExecutionResult(
   log: ExecutionLog,
   options: { taskName: string; accountName: string }
 ): void {
+  if (!getSettings().notifyOnExecution) return
   if (!Notification.isSupported()) return
 
   const { taskName, accountName } = options

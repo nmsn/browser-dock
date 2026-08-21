@@ -29,10 +29,3 @@ dmg:
       y: 220
       type: link
       path: /Applications
-linux:
-  target:
-    - target: AppImage
-      arch:
-        - x64
-  category: Utility
-  icon: build/icon.png
