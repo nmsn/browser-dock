@@ -1008,7 +1008,7 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 | **Phase 1** 基础框架 | ✅ 100% | Electron 初始化 / SQLite + 迁移 / 备份 / Chrome 管理 / Profile 锁 / 账号管理 UI / 登录流程 |
 | **Phase 2** 自动化引擎 | ✅ 100% | CDP 客户端 / 基础操作封装 / AutomationContext / 登录状态 + 账号身份检测 / 任务管理 UI |
 | **Phase 3** 定时调度 | ✅ 100% | Cron 调度器 / 多账号并行 / 账号锁 / 状态机 / 超时取消重试 / 执行日志 / 执行监控 UI |
-| **Phase 4** 优化完善 | 🟡 60% | 重试 ✅、DOM 快照 ✅、原生打包验证 ✅、通知 ✅、CSV 导出 ✅、实时推送 ✅、取消 ✅、下次运行时间 ✅、应用设置页 ✅；脚本权限 UI 待做、多平台 待做、性能 待做 |
+| **Phase 4** 优化完善 | 🟡 65% | 重试 ✅、DOM 快照 ✅、原生打包验证 ✅、通知 ✅、CSV 导出 ✅、实时推送 ✅、取消 ✅、下次运行时间 ✅、应用设置页 ✅、保留期自动清理 ✅；脚本权限 UI 待做、多平台 待做、性能 待做 |
 
 ### 16.2 关键模块映射（设计规范 → 实际代码）
 
@@ -1022,7 +1022,7 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 | 7.1 运行时结构 | `src/main/automation/{runtime,actions,taobao}/` 完整实现 |
 | 8.3 重试原则 | `src/main/scheduler/task-executor.ts`（`runWithRetry` + `isRetryableError` + 退避 + AbortSignal） |
 | 9.1 存储要求 | `src/main/secrets/keyring.ts`（@napi-rs/keyring）+ `src/main/store/logs.ts`（不带敏感字段） |
-| 9.3 删除/备份 | `src/main/store/backup.ts`（VACUUM INTO + 保留 7 份） + `src/main/log-export.ts`（CSV 仅 SAFE_FIELDS） |
+| 9.3 删除/备份 | `src/main/store/backup.ts`（VACUUM INTO + 保留 7 份） + `src/main/log-export.ts`（CSV 仅 SAFE_FIELDS） + `src/main/retention.ts`（日志/截图/快照按保留期清理，启动时 + 每日 03:00） |
 | 10.1 安全基线 | `contextIsolation: true, nodeIntegration: false, sandbox: false` + 入参校验 + 白名单 IPC |
 | 10.3 应用退出 | `app.requestSingleInstanceLock()` + `before-quit` 关闭清理 |
 | 11.2 页面变更检测 | `src/main/store/diagnostics.ts`（page_diagnostics 表）+ task-executor 自动捕获 DOM + 截图 |
@@ -1088,4 +1088,4 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 - 未实现低频巡检（文档 11.2 第二段），用于提前发现页面布局变化
 - 未实现 Mihomo 集成（文档 1.2 提到「完整代理管理」，目前仅支持 `proxyConfig` 字段占位）
 - 设置页已支持开机自启动（`app.setLoginItemSettings`），开发环境未打包时会报系统权限错误（仅噪音，不影响功能）；托盘最小化行为待实现
-- 日志 / 截图保留天数已可配置，按保留期自动清理的定时任务待实现
+- 保留期清理已实现（`src/main/retention.ts`：启动时 + 每日 03:00），暂无手动触发入口

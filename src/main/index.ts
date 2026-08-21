@@ -9,6 +9,7 @@ import { clearAllAccountLocks, isAccountLocked } from './store/account-locks'
 import { initScheduler, stopAllSchedules } from './scheduler/service'
 import { initNotifier } from './notifier'
 import { getSettings, applyLaunchAtLogin } from './store/settings'
+import { initRetentionCleanup, stopRetentionCleanup } from './retention'
 import { executeTask } from './scheduler/task-executor'
 import { runTaskNow } from './scheduler/service'
 import { createAccount as dbCreateAccount } from './store/accounts'
@@ -70,6 +71,9 @@ function bootstrap(): void {
   if (getSettings().launchAtLogin) {
     applyLaunchAtLogin(true)
   }
+
+  // 保留期清理：启动时执行一次 + 每日定时（文档 9.3）
+  initRetentionCleanup()
 
   // 调度器初始化（注册所有启用的 cron 任务，文档 5.2）
   initScheduler()
@@ -197,5 +201,6 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   logger.info('Application is quitting...')
   stopAllSchedules()
+  stopRetentionCleanup()
   closeDatabase()
 })
