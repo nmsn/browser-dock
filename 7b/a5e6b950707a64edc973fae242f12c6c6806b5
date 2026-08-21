@@ -1,0 +1,63 @@
+src/main/chrome/manager.ts
+  s_dd0b2aa86c0fc5::t_d6301d0f6d0188 8
+  s_dd0b2aa86c0fc5::t_ce0c785e310537 210,216-231,233
+  s_dd0b2aa86c0fc5::t_122aa98be556e7 213-215
+pnpm-workspace.yaml
+  s_dd0b2aa86c0fc5::t_a18074c2916814 6-11
+src/renderer/src/env.d.ts
+  s_dd0b2aa86c0fc5::t_6872130cd80766 1-9
+src/renderer/src/store/useSettingsStore.ts
+  s_dd0b2aa86c0fc5::t_543c79c9916308 1-45
+src/shared/types.ts
+  s_dd0b2aa86c0fc5::t_6ac11d9970aeca 375-402
+  s_dd0b2aa86c0fc5::t_503c58148f8099 460-463
+src/renderer/src/pages/Settings/index.tsx
+  s_dd0b2aa86c0fc5::t_0ddb2480dc1555 1-3,5-8,12,15-19,21-64,66-108,111-125,128-183,187-188,190-202
+  s_dd0b2aa86c0fc5::t_f0114a7b7d4142 184
+src/main/notifier.ts
+  s_dd0b2aa86c0fc5::t_5382c098c0f11f 32
+  s_dd0b2aa86c0fc5::t_bccf13aee75b23 3
+src/main/index.ts
+  s_dd0b2aa86c0fc5::t_41c7cc2b15e26a 68,73
+  s_dd0b2aa86c0fc5::t_c6564e42289f13 69-72
+  s_dd0b2aa86c0fc5::t_4da7340e7a926a 11
+src/main/chrome/profile.ts
+  s_dd0b2aa86c0fc5::t_ef8d13053408af 55-59
+src/main/store/settings.ts
+  s_dd0b2aa86c0fc5::t_dc11e4c0d46fc0 1-117
+src/preload/index.ts
+  s_dd0b2aa86c0fc5::t_4e5d38e7987196 72-75
+  s_dd0b2aa86c0fc5::t_e189d4524963f8 12-13
+src/main/ipc-handlers.ts
+  s_dd0b2aa86c0fc5::t_c9dbc76df445a0 288
+  s_dd0b2aa86c0fc5::t_00d1011c5a3d32 27
+  s_dd0b2aa86c0fc5::t_751f90b2655bf2 238
+  s_dd0b2aa86c0fc5::t_aa68d09b628609 41-42
+  s_dd0b2aa86c0fc5::t_94251d6e3d1693 328-338
+docs/project-architecture-design.md
+  s_dd0b2aa86c0fc5::t_b5fa31ef9b8c15 1011
+  s_dd0b2aa86c0fc5::t_0246ad165d257e 981
+  s_dd0b2aa86c0fc5::t_cefc8fb073b46d 1069
+  s_dd0b2aa86c0fc5::t_b958572ae4be7a 524
+  s_dd0b2aa86c0fc5::t_8321b292f27fc9 1076
+  s_dd0b2aa86c0fc5::t_fd9f7dbdf40486 1085,1090
+  s_dd0b2aa86c0fc5::t_5883ae6a1ed9b1 1089,1091
+pnpm-lock.yaml
+  s_dd0b2aa86c0fc5::t_46949268a6c7a3 19,95,113,829-830,1320-1321,1437-1438,1542-1543,1560-1561,1653,2057-2058,2887,2889,3327,3343,3806,3829,3831,3930,4054,4080,4601,4811,5155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "7ba5e6b950707a64edc973fae242f12c6c6806b5",
+  "prompts": {},
+  "sessions": {
+    "s_dd0b2aa86c0fc5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fdd2bc730ffeEsHOmGebwWMjTf",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
