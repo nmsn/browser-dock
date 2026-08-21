@@ -1,0 +1,26 @@
+docs/project-architecture-design.md
+  s_dd0b2aa86c0fc5::t_1bb3538cc69a52 1006
+  s_dd0b2aa86c0fc5::t_b948ba6650a30f 1033
+  s_dd0b2aa86c0fc5::t_2416b0d99a17c7 1075-1076
+  s_dd0b2aa86c0fc5::t_e817db948c0b93 1083-1087,1091,1095-1097
+  s_dd0b2aa86c0fc5::t_6f14d5e5f68c61 1015
+  s_dd0b2aa86c0fc5::t_90c5caa82be5ad 1029
+  s_dd0b2aa86c0fc5::t_5d3a49e8d97a80 525,528,530,535-538
+  s_dd0b2aa86c0fc5::t_58b89d5efa4820 1036-1037
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "1aca643dca1a1ad5dd5b00d139ee49950b00a414",
+  "prompts": {},
+  "sessions": {
+    "s_dd0b2aa86c0fc5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fdd2bc730ffeEsHOmGebwWMjTf",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
