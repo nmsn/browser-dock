@@ -522,16 +522,20 @@ export async function startLive(cdpClient: CdpClient, accountId: string): Promis
 
 - [x] 错误重试机制
 - [x] 应用设置页（Chrome 路径、并发上限、日志/截图保留天数、通知开关、开机自启动）
-- [ ] 脚本权限策略和系统密钥环（基础密钥环已实现，待加强任务级白名单配置 UI）
+- [x] 脚本权限策略和系统密钥环（任务级 API 白名单 UI + 沙箱强制执行；密钥环已实现）
 - [x] 页面变化检测和 DOM 快照
 - [x] Electron 原生模块打包验证（macOS arm64/x64 已验证通过）
-- [ ] 多平台安装、升级和数据迁移
+- [ ] 多平台安装、升级和数据迁移（恢复界面已完成；Windows 打包按本期决策暂缓，见 15.4）
 - [x] 执行结果通知
-- [ ] 性能优化
+- [x] 性能优化（数据库索引已完成；启动时间 / Chrome 池化按需后续处理）
 - [x] 日志导出（CSV，过滤敏感信息）
 - [x] 实时执行状态推送（execution:status + execution:log 事件）
 - [x] 任务取消支持（cancel-registry + AbortSignal 传播）
 - [x] 调度下次运行时间显示（cron-parser）
+- [x] 托盘最小化（closeToTray 设置 + 系统托盘菜单）
+- [x] 保留期自动清理（日志/截图/DOM 快照，启动时 + 每日 03:00）
+- [x] 备份恢复界面（列表 / 手动备份 / 一键恢复，恢复前自动安全备份）
+- [x] 低频巡检（opt-in，每日 04:00 探针检测中控台可用性）
 
 ---
 
@@ -999,7 +1003,7 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 
 ## 十六、当前实现进度（v0.0.1）
 
-> 本节反映代码库实际状态（同步于 commit `5e933ef`，2026-08-19），用于追踪实施进度。文档前面章节为设计规范，本节为实现快照。
+> 本节反映代码库实际状态（同步于 commit `9f2be62`，2026-08-21），用于追踪实施进度。文档前面章节为设计规范，本节为实现快照。
 
 ### 16.1 Phase 完成情况
 
@@ -1008,7 +1012,7 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 | **Phase 1** 基础框架 | ✅ 100% | Electron 初始化 / SQLite + 迁移 / 备份 / Chrome 管理 / Profile 锁 / 账号管理 UI / 登录流程 |
 | **Phase 2** 自动化引擎 | ✅ 100% | CDP 客户端 / 基础操作封装 / AutomationContext / 登录状态 + 账号身份检测 / 任务管理 UI |
 | **Phase 3** 定时调度 | ✅ 100% | Cron 调度器 / 多账号并行 / 账号锁 / 状态机 / 超时取消重试 / 执行日志 / 执行监控 UI |
-| **Phase 4** 优化完善 | 🟡 65% | 重试 ✅、DOM 快照 ✅、原生打包验证 ✅、通知 ✅、CSV 导出 ✅、实时推送 ✅、取消 ✅、下次运行时间 ✅、应用设置页 ✅、保留期自动清理 ✅；脚本权限 UI 待做、多平台 待做、性能 待做 |
+| **Phase 4** 优化完善 | ✅ 95% | 重试 / DOM 快照 / 打包验证 / 通知 / CSV 导出 / 实时推送 / 取消 / 下次运行时间 / 应用设置页 / 保留期清理 / 脚本权限白名单 / 备份恢复 / 托盘 / 低频巡检 / 数据库索引 全部完成；仅剩 Windows 打包（本期决策暂缓）与 Mihomo 集成（低优先级） |
 
 ### 16.2 关键模块映射（设计规范 → 实际代码）
 
@@ -1022,13 +1026,15 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 | 7.1 运行时结构 | `src/main/automation/{runtime,actions,taobao}/` 完整实现 |
 | 8.3 重试原则 | `src/main/scheduler/task-executor.ts`（`runWithRetry` + `isRetryableError` + 退避 + AbortSignal） |
 | 9.1 存储要求 | `src/main/secrets/keyring.ts`（@napi-rs/keyring）+ `src/main/store/logs.ts`（不带敏感字段） |
+| 9.2 脚本权限边界 | `src/main/scheduler/task-executor.ts`（任务级 allowedApis 沙箱守卫，未授权 API 抛 TK_API_NOT_ALLOWED）+ 任务创建 UI 白名单选择器 |
 | 9.3 删除/备份 | `src/main/store/backup.ts`（VACUUM INTO + 保留 7 份） + `src/main/log-export.ts`（CSV 仅 SAFE_FIELDS） + `src/main/retention.ts`（日志/截图/快照按保留期清理，启动时 + 每日 03:00） |
 | 10.1 安全基线 | `contextIsolation: true, nodeIntegration: false, sandbox: false` + 入参校验 + 白名单 IPC |
 | 10.3 应用退出 | `app.requestSingleInstanceLock()` + `before-quit` 关闭清理 |
-| 11.2 页面变更检测 | `src/main/store/diagnostics.ts`（page_diagnostics 表）+ task-executor 自动捕获 DOM + 截图 |
+| 11.2 页面变更检测 | `src/main/store/diagnostics.ts`（page_diagnostics 表）+ task-executor 自动捕获 DOM + 截图 + `src/main/inspection.ts`（opt-in 低频巡检，每日 04:00） |
 | 11.3 UI 状态 | 执行监控页（账号/任务/状态/耗时/错误/取消/诊断） |
 | 12.2 集成测试 | `scripts/test-chrome-cdp.mjs` + `scripts/test-executor.cjs`（SMOKE PASS） |
-| 13.2 数据库迁移 | `applyMigrations` 自动 + pre-migration backup（VACUUM INTO） |
+| 13.2 数据库迁移 | `applyMigrations` 自动 + pre-migration backup（VACUUM INTO）+ `src/main/store/restore.ts`（备份恢复：路径校验 / 安全备份 / WAL 清理 / 重放迁移）+ 设置页备份卡片 |
+| 10.3 托盘行为 | `src/main/tray.ts`（托盘菜单 + closeToTray 设置，关闭窗口隐藏到托盘） |
 
 ### 16.3 端到端验证状态
 
@@ -1066,26 +1072,26 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 | 执行 | `execution:run/list/cancel/export-csv` | 任务执行与日志 |
 | 诊断 | `diagnostics:list/get` | 失败页面诊断查看 |
 | 密钥环 | `keyring:set/get/delete` | 敏感信息存储 |
-| 设置 | `settings:get/update` | 应用设置读写（Chrome 路径、并发上限、保留天数、通知、开机自启） |
+| 设置 | `settings:get/update` | 应用设置读写（Chrome 路径、并发上限、保留天数、通知、开机自启、托盘、巡检） |
+| 备份 | `backups:list/create/restore` | 数据库备份列表 / 手动备份 / 一键恢复（恢复后调度自动重注册） |
 | 事件 | `execution:status` / `execution:log` | 主进程 → renderer 实时推送 |
 
 ### 16.6 后续开发路线图
 
 | 优先级 | 项目 | 文档章节 |
 |-------|------|---------|
-| 高 | 多平台打包（Windows nsis，暂缓——见 16.7 交叉编译限制） | 10.2 |
-| 中 | 脚本权限策略增强（任务级白名单 UI） | 9.2 |
-| 中 | 升级 / 数据迁移（备份恢复界面） | 13.2 |
-| 中 | 性能优化（启动时间、Chrome 池化、数据库索引） | Phase 4 |
-| 低 | 设置中增加 Mihomo 代理管理 | 2.6.2 |
-| 低 | 镜像 / 截图 / DOM 快照保留期配置 | 9.3 |
+| 高 | Windows 打包（nsis 配置已验证，需 Windows/CI 原生构建，本期决策暂缓） | 10.2 / 15.4 |
+| 低 | Mihomo 代理管理集成（需分发 mihomo 二进制） | 2.6.2 |
+| 低 | 性能优化进阶（启动时间、Chrome 池化；数据库索引已完成） | Phase 4 |
+
+> Phase 1-3 全部完成，Phase 4 除上述暂缓项外全部完成。
 
 ### 16.7 已知限制
 
-- 仅 macOS 打包（Windows nsis 配置已验证可行但暂缓，见 15.4 交叉编译原生模块限制）
+- 仅 macOS 打包（Windows nsis 配置已验证可行但按本期决策暂缓，见 15.4 交叉编译原生模块限制）
 - 无代码签名 / 公证（首启需手动「右键打开」）
 - Chrome `--disable-background-timer-throttling` 仅降低节流，不解决睡眠场景（文档 5.1 / 10.3 明确）
-- 未实现低频巡检（文档 11.2 第二段），用于提前发现页面布局变化
 - 未实现 Mihomo 集成（文档 1.2 提到「完整代理管理」，目前仅支持 `proxyConfig` 字段占位）
-- 设置页已支持开机自启动（`app.setLoginItemSettings`），开发环境未打包时会报系统权限错误（仅噪音，不影响功能）；托盘最小化行为待实现
-- 保留期清理已实现（`src/main/retention.ts`：启动时 + 每日 03:00），暂无手动触发入口
+- 设置页已支持开机自启动（`app.setLoginItemSettings`），开发环境未打包时会报系统权限错误（仅噪音，不影响功能）
+- 低频巡检探针仅验证中控台页面可达性（导航 + body 就绪 + 标题记录），未覆盖具体业务选择器；真实选择器需在接入实际业务时补充
+- 巡检 / 清理暂无手动触发入口（巡检可通过开关即时生效，清理随启动和每日定时执行）
