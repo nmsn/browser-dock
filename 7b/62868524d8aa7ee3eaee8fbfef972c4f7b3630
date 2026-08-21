@@ -1,0 +1,37 @@
+src/shared/types.ts
+  s_dd0b2aa86c0fc5::t_92ac280556205d 398-399
+electron-builder.yml
+  s_dd0b2aa86c0fc5::t_02d065ff0966c2 9-10
+src/main/store/settings.ts
+  s_dd0b2aa86c0fc5::t_fa1bea71a44400 24-25
+  s_dd0b2aa86c0fc5::t_91a7b03fed652f 67-69
+src/main/index.ts
+  s_dd0b2aa86c0fc5::t_f1c627ffab9e78 121-128
+  s_dd0b2aa86c0fc5::t_f44ba4a4697f00 24
+  s_dd0b2aa86c0fc5::t_092dee87895c95 46-47,49-53
+  s_dd0b2aa86c0fc5::t_07d837e84ab2e8 48
+  s_dd0b2aa86c0fc5::t_d345bea41542b3 13
+  s_dd0b2aa86c0fc5::t_5a2f21285a427a 257
+  s_dd0b2aa86c0fc5::t_7e9128fc6d3d3d 259
+src/renderer/src/pages/Settings/index.tsx
+  s_dd0b2aa86c0fc5::t_a72d6e58ebe418 222-223
+  s_dd0b2aa86c0fc5::t_2cdac776e7da3a 323-328
+src/main/tray.ts
+  s_dd0b2aa86c0fc5::t_a507da09b45f75 1-56
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "7b62868524d8aa7ee3eaee8fbfef972c4f7b3630",
+  "prompts": {},
+  "sessions": {
+    "s_dd0b2aa86c0fc5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fdd2bc730ffeEsHOmGebwWMjTf",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
