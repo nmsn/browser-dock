@@ -22,7 +22,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   screenshotRetentionDays: 30,
   notifyOnExecution: true,
   launchAtLogin: false,
-  closeToTray: false
+  closeToTray: false,
+  enableInspection: false
 }
 
 let cached: AppSettings | null = null
@@ -66,6 +67,9 @@ export function normalizeSettingsPatch(patch: UpdateSettingsInput): UpdateSettin
   }
   if (patch.closeToTray !== undefined) {
     normalized.closeToTray = Boolean(patch.closeToTray)
+  }
+  if (patch.enableInspection !== undefined) {
+    normalized.enableInspection = Boolean(patch.enableInspection)
   }
 
   return normalized

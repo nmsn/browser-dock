@@ -220,7 +220,8 @@ export default function SettingsPage() {
       screenshotRetentionDays: Number(draft.screenshotRetentionDays),
       notifyOnExecution: Boolean(draft.notifyOnExecution),
       launchAtLogin: Boolean(draft.launchAtLogin),
-      closeToTray: Boolean(draft.closeToTray)
+      closeToTray: Boolean(draft.closeToTray),
+      enableInspection: Boolean(draft.enableInspection)
     })
   }
 
@@ -325,6 +326,12 @@ export default function SettingsPage() {
             description="点击关闭按钮时隐藏窗口到系统托盘，任务继续执行；从托盘菜单退出"
             checked={Boolean(draft.closeToTray)}
             onCheckedChange={(v) => setDraft((d) => ({ ...d, closeToTray: v }))}
+          />
+          <SwitchField
+            label="低频巡检"
+            description="每日 04:00 检查已登录账号的中控台页面可用性，异常时记录诊断并发送通知"
+            checked={Boolean(draft.enableInspection)}
+            onCheckedChange={(v) => setDraft((d) => ({ ...d, enableInspection: v }))}
           />
         </CardContent>
       </Card>

@@ -35,6 +35,7 @@ import { registerSchedule, unregisterSchedule, runTaskNow, syncAllSchedules } fr
 import { getNextRunTime } from './scheduler/cron-scheduler'
 import { cancelExecution } from './cancel-registry'
 import { exportExecutionLogsCsv } from './log-export'
+import { initInspection } from './inspection'
 import { PROFILES_PATH, DEFAULT_CONFIG } from './config'
 import type {
   CreateAccountInput,
@@ -365,6 +366,10 @@ export function registerIpcHandlers(): void {
     const next = updateSettings(patch)
     if (patch.launchAtLogin !== undefined) {
       applyLaunchAtLogin(next.launchAtLogin)
+    }
+    if (patch.enableInspection !== undefined) {
+      // 巡检开关变更后重新调度（文档 11.2）
+      initInspection()
     }
     return next
   })

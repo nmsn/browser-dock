@@ -11,6 +11,7 @@ import { initNotifier } from './notifier'
 import { getSettings, applyLaunchAtLogin } from './store/settings'
 import { initRetentionCleanup, stopRetentionCleanup } from './retention'
 import { createTray, destroyTray } from './tray'
+import { initInspection, stopInspection } from './inspection'
 import { executeTask } from './scheduler/task-executor'
 import { runTaskNow } from './scheduler/service'
 import { createAccount as dbCreateAccount } from './store/accounts'
@@ -18,6 +19,7 @@ import { createTask as dbCreateTask } from './store/tasks'
 import { getTask } from './store/tasks'
 import { backupDatabase } from './store/backup'
 import { restoreDatabaseFromBackup } from './store/restore'
+import { runInspection } from './inspection'
 import type { Account, Task } from '../shared/types'
 
 let mainWindow: BrowserWindow | null = null
@@ -87,6 +89,9 @@ function bootstrap(): void {
 
   // 保留期清理：启动时执行一次 + 每日定时（文档 9.3）
   initRetentionCleanup()
+
+  // 低频巡检：仅在设置开启时调度（文档 11.2）
+  initInspection()
 
   // 调度器初始化（注册所有启用的 cron 任务，文档 5.2）
   initScheduler()
@@ -220,6 +225,14 @@ async function runSmokeTest(): Promise<void> {
       step(`Restore threw: ${err instanceof Error ? err.message : String(err)}`, false)
     }
 
+    // 低频巡检（文档 11.2）：无已登录账号时应跳过且不启动浏览器
+    try {
+      const inspected = await runInspection()
+      step(`Inspection: skipped (${inspected} logged-in accounts)`, inspected === 0)
+    } catch (err) {
+      step(`Inspection threw: ${err instanceof Error ? err.message : String(err)}`, false)
+    }
+
     // 多账号并行执行验证（文档 5.3 不同账号可以并行执行）
     try {
       const account2: Account = {
@@ -259,5 +272,6 @@ app.on('before-quit', () => {
   destroyTray()
   stopAllSchedules()
   stopRetentionCleanup()
+  stopInspection()
   closeDatabase()
 })
