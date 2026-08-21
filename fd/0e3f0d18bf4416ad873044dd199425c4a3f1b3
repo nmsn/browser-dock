@@ -1,0 +1,27 @@
+src/main/retention.ts
+  s_dd0b2aa86c0fc5::t_1ecb28d69f8279 1-163
+docs/project-architecture-design.md
+  s_dd0b2aa86c0fc5::t_26affc14bb0bbb 1011
+  s_dd0b2aa86c0fc5::t_bd4e049e11bba1 1091
+  s_dd0b2aa86c0fc5::t_047d7d9172044c 1025
+src/main/index.ts
+  s_dd0b2aa86c0fc5::t_9eaa7bc4e9e7bf 12
+  s_dd0b2aa86c0fc5::t_20f733da2d22a3 75-77
+  s_dd0b2aa86c0fc5::t_852e37150ec013 204
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "fd0e3f0d18bf4416ad873044dd199425c4a3f1b3",
+  "prompts": {},
+  "sessions": {
+    "s_dd0b2aa86c0fc5": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fdd2bc730ffeEsHOmGebwWMjTf",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
