@@ -21,7 +21,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   logRetentionDays: 30,
   screenshotRetentionDays: 30,
   notifyOnExecution: true,
-  launchAtLogin: false
+  launchAtLogin: false,
+  closeToTray: false
 }
 
 let cached: AppSettings | null = null
@@ -62,6 +63,9 @@ export function normalizeSettingsPatch(patch: UpdateSettingsInput): UpdateSettin
   }
   if (patch.launchAtLogin !== undefined) {
     normalized.launchAtLogin = Boolean(patch.launchAtLogin)
+  }
+  if (patch.closeToTray !== undefined) {
+    normalized.closeToTray = Boolean(patch.closeToTray)
   }
 
   return normalized

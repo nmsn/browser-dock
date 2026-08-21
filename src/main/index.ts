@@ -10,6 +10,7 @@ import { initScheduler, stopAllSchedules } from './scheduler/service'
 import { initNotifier } from './notifier'
 import { getSettings, applyLaunchAtLogin } from './store/settings'
 import { initRetentionCleanup, stopRetentionCleanup } from './retention'
+import { createTray, destroyTray } from './tray'
 import { executeTask } from './scheduler/task-executor'
 import { runTaskNow } from './scheduler/service'
 import { createAccount as dbCreateAccount } from './store/accounts'
@@ -20,6 +21,7 @@ import { restoreDatabaseFromBackup } from './store/restore'
 import type { Account, Task } from '../shared/types'
 
 let mainWindow: BrowserWindow | null = null
+let quitting = false
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -39,6 +41,14 @@ function createWindow(): void {
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
+  })
+
+  // 10.3 托盘行为：开启 closeToTray 时关闭窗口仅隐藏，任务继续执行
+  mainWindow.on('close', (event) => {
+    if (getSettings().closeToTray && !quitting) {
+      event.preventDefault()
+      mainWindow?.hide()
+    }
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {
@@ -108,6 +118,14 @@ if (!gotTheLock) {
     }
 
     createWindow()
+    createTray(() => {
+      if (mainWindow) {
+        mainWindow.show()
+        mainWindow.focus()
+      } else {
+        createWindow()
+      }
+    })
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
@@ -236,7 +254,9 @@ app.on('window-all-closed', () => {
 
 // 优雅退出
 app.on('before-quit', () => {
+  quitting = true
   logger.info('Application is quitting...')
+  destroyTray()
   stopAllSchedules()
   stopRetentionCleanup()
   closeDatabase()

@@ -395,6 +395,8 @@ export interface AppSettings {
   notifyOnExecution: boolean
   /** 开机自启动 */
   launchAtLogin: boolean
+  /** 关闭窗口时最小化到系统托盘（文档 10.3） */
+  closeToTray: boolean
 }
 
 /**

@@ -219,7 +219,8 @@ export default function SettingsPage() {
       logRetentionDays: Number(draft.logRetentionDays),
       screenshotRetentionDays: Number(draft.screenshotRetentionDays),
       notifyOnExecution: Boolean(draft.notifyOnExecution),
-      launchAtLogin: Boolean(draft.launchAtLogin)
+      launchAtLogin: Boolean(draft.launchAtLogin),
+      closeToTray: Boolean(draft.closeToTray)
     })
   }
 
@@ -318,6 +319,12 @@ export default function SettingsPage() {
             description="登录系统后自动在后台启动应用（隐藏窗口）"
             checked={Boolean(draft.launchAtLogin)}
             onCheckedChange={(v) => setDraft((d) => ({ ...d, launchAtLogin: v }))}
+          />
+          <SwitchField
+            label="关闭窗口最小化到托盘"
+            description="点击关闭按钮时隐藏窗口到系统托盘，任务继续执行；从托盘菜单退出"
+            checked={Boolean(draft.closeToTray)}
+            onCheckedChange={(v) => setDraft((d) => ({ ...d, closeToTray: v }))}
           />
         </CardContent>
       </Card>
