@@ -29,6 +29,16 @@ export interface CDPResponse {
 export interface CDPEvent {
   method: string
   params?: Record<string, unknown>
+  /** flat autoAttach 模式下子会话事件携带 sessionId */
+  sessionId?: string
+}
+
+/** 已附加的子 target（OOPIF / 新窗口等） */
+export interface AttachedTarget {
+  targetId: string
+  sessionId: string
+  url: string
+  type: string
 }
 
 export class CdpClient {
@@ -36,6 +46,8 @@ export class CdpClient {
   private nextId = 1
   private pending = new Map<number, (response: CDPResponse) => void>()
   private eventListeners = new Map<string, Set<(event: CDPEvent) => void>>()
+  /** flat autoAttach 附着的子 target（sessionId → target 信息） */
+  private attachedTargets = new Map<string, AttachedTarget>()
 
   constructor(private readonly debugUrl: string) {}
 
@@ -83,10 +95,15 @@ export class CdpClient {
     })
   }
 
-  async send<T = Record<string, unknown>>(method: string, params?: Record<string, unknown>): Promise<T> {
+  async send<T = Record<string, unknown>>(
+    method: string,
+    params?: Record<string, unknown>,
+    sessionId?: string
+  ): Promise<T> {
     if (!this.ws) throw new Error('CDP client not connected')
     const id = this.nextId++
-    const command: CDPCommand = { id, method, params }
+    const command: CDPCommand & { sessionId?: string } = { id, method, params }
+    if (sessionId) command.sessionId = sessionId
     return new Promise((resolve, reject) => {
       this.pending.set(id, (response) => {
         if (response.error) {
@@ -99,11 +116,116 @@ export class CdpClient {
     })
   }
 
+  /**
+   * 启用 flat autoAttach：自动附着本页面的子 target（跨域 iframe / OOPIF）。
+   * 之后可用 listAttachedSessions() / waitForSession() 按 URL 寻址子会话。
+   */
+  async enableAutoAttach(): Promise<void> {
+    this.onEvent('Target.attachedToTarget', (event) => {
+      const params = event.params as
+        | { sessionId: string; targetInfo?: { targetId: string; url: string; type: string } }
+        | undefined
+      if (!params?.targetInfo) return
+      this.attachedTargets.set(params.sessionId, {
+        targetId: params.targetInfo.targetId,
+        sessionId: params.sessionId,
+        url: params.targetInfo.url ?? '',
+        type: params.targetInfo.type ?? ''
+      })
+    })
+    this.onEvent('Target.detachedFromTarget', (event) => {
+      const params = event.params as { sessionId?: string } | undefined
+      if (params?.sessionId) this.attachedTargets.delete(params.sessionId)
+    })
+    await this.send('Target.setAutoAttach', {
+      autoAttach: true,
+      waitForDebuggerOnStart: false,
+      flatten: true
+    })
+  }
+
+  listAttachedSessions(): AttachedTarget[] {
+    return Array.from(this.attachedTargets.values())
+  }
+
+  /** 按 URL 子串查找已附着的子会话（大小写不敏感），未找到返回 undefined */
+  session(urlSubstring: string): FrameSession | undefined {
+    const want = urlSubstring.toLowerCase()
+    if (!want) return undefined
+    for (const target of this.attachedTargets.values()) {
+      if (target.url.toLowerCase().includes(want)) {
+        return new FrameSession(this, target.sessionId, target.url)
+      }
+    }
+    return undefined
+  }
+
+  /** 等待 URL 匹配的子会话出现（iframe 晚于调用创建时使用） */
+  async waitForSession(
+    urlSubstring: string,
+    timeoutMs: number,
+    intervalMs = 300
+  ): Promise<FrameSession> {
+    const start = Date.now()
+    while (Date.now() - start < timeoutMs) {
+      const session = this.session(urlSubstring)
+      if (session) return session
+      await new Promise((r) => setTimeout(r, intervalMs))
+    }
+    throw new Error(
+      `CDP_SESSION_WAIT_TIMEOUT: no attached target matching "${urlSubstring}" within ${timeoutMs}ms`
+    )
+  }
+
   disconnect(): void {
     this.ws?.close()
     this.ws = null
     this.pending.clear()
     this.eventListeners.clear()
+    this.attachedTargets.clear()
+  }
+}
+
+/**
+ * 子会话句柄（flat autoAttach 附着的 OOPIF/iframe target）
+ * 在同一 WebSocket 连接上以 sessionId 区分命令路由
+ */
+export class FrameSession {
+  constructor(
+    private readonly client: CdpClient,
+    readonly sessionId: string,
+    readonly url: string
+  ) {}
+
+  async send<T = Record<string, unknown>>(method: string, params?: Record<string, unknown>): Promise<T> {
+    return this.client.send<T>(method, params, this.sessionId)
+  }
+
+  /** 在该 target 的主世界执行表达式；异常时抛出（含页面异常描述） */
+  async evaluate<T = unknown>(expression: string): Promise<T> {
+    const result = await this.send<{
+      result?: { value?: T }
+      exceptionDetails?: { exception?: { description?: string; value?: unknown } }
+    }>('Runtime.evaluate', {
+      expression,
+      returnByValue: true,
+      awaitPromise: true
+    })
+    if (result.exceptionDetails) {
+      const detail =
+        result.exceptionDetails.exception?.description ??
+        String(result.exceptionDetails.exception?.value ?? 'unknown page exception')
+      throw new Error(`PG_EVAL_FAILED: ${detail.slice(0, 500)}`)
+    }
+    return result.result?.value as T
+  }
+
+  async detach(): Promise<void> {
+    try {
+      await this.client.send('Target.detachFromTarget', { sessionId: this.sessionId })
+    } catch {
+      // 已断开等场景忽略
+    }
   }
 }
 
