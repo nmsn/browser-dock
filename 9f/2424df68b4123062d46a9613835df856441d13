@@ -1,0 +1,27 @@
+src/renderer/src/pages/Tasks/index.tsx
+  s_b7df082f1a3b8f::t_1d3116115c1d4c 477-482
+  s_b7df082f1a3b8f::t_1e1bcea10daf1c 30
+  s_b7df082f1a3b8f::t_5057990af3ea97 117-143,145-149,151,155-156,158-159,168-169,174-178,188,198-199,202-280,288
+src/renderer/src/pages/Execution/index.tsx
+  s_b7df082f1a3b8f::t_a24b55a5de1de7 280
+  s_b7df082f1a3b8f::t_7ef17ac00bfab3 299-309,311
+  s_b7df082f1a3b8f::t_dfd28b05b5c367 298,310,312
+docs/c48-integration-plan.md
+  s_b7df082f1a3b8f::t_6f6c11b0fb8608 118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "9f2424df68b4123062d46a9613835df856441d13",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
