@@ -1,0 +1,21 @@
+src/main/automation/network-capture.ts
+  s_b7df082f1a3b8f::t_f5105813c7923f 1-133
+docs/c48-integration-plan.md
+  s_b7df082f1a3b8f::t_fe612c3d0e503d 112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "07a65000e53de6128f46336785eba753aff5c3cb",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
