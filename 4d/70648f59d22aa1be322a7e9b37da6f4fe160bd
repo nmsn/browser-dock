@@ -1,0 +1,23 @@
+src/main/automation/taobao/live-detail-url.ts
+  s_b7df082f1a3b8f::t_64936baf85edf4 1-44
+docs/c48-integration-plan.md
+  s_b7df082f1a3b8f::t_53f18cb96d3535 114
+src/main/automation/taobao/page-state.ts
+  s_b7df082f1a3b8f::t_b20a45173daeb2 1-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "4d70648f59d22aa1be322a7e9b37da6f4fe160bd",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
