@@ -1,0 +1,49 @@
+src/main/automation/features/registry.ts
+  s_b7df082f1a3b8f::t_dccfe5e6bb4b36 1-56
+src/shared/types.ts
+  s_b7df082f1a3b8f::t_3ad02e38379ccf 98,100-103
+  s_b7df082f1a3b8f::t_da1bd351edb9b8 519-520,525-552
+  s_b7df082f1a3b8f::t_aaf7f8c0f93869 73-75,77
+  s_b7df082f1a3b8f::t_02cc1fd6e8f14d 466-468
+  s_b7df082f1a3b8f::t_0ba29080dbe669 553
+docs/c48-integration-plan.md
+  s_b7df082f1a3b8f::t_3722cdc74dbb17 115
+src/main/store/database.ts
+  s_b7df082f1a3b8f::t_5c53a3bc5c3208 202-213
+src/preload/index.ts
+  s_b7df082f1a3b8f::t_235131fbc7694b 52-54
+src/main/ipc-handlers.ts
+  s_b7df082f1a3b8f::t_748438ad798d71 39
+  s_b7df082f1a3b8f::t_c447b0800cf6f4 217-225,231-232,235-236,244-245
+  s_b7df082f1a3b8f::t_2cbbf5d3dea8c4 246
+src/main/scheduler/task-executor.ts
+  s_b7df082f1a3b8f::t_673629753efece 24-26
+  s_b7df082f1a3b8f::t_8291d92964e3b8 129
+  s_b7df082f1a3b8f::t_647fc8d7e364be 198-241
+  s_b7df082f1a3b8f::t_ee2e7a3c007fa8 120-121,125-126,128,130-133
+  s_b7df082f1a3b8f::t_df3e2fed80c1cb 119,122-123,127,135-151
+  s_b7df082f1a3b8f::t_bd05b64a304107 358-359,363
+  s_b7df082f1a3b8f::t_e62d8dd04453eb 197
+src/main/store/tasks.ts
+  s_b7df082f1a3b8f::t_bb11679ce6e890 58-59,68-69
+  s_b7df082f1a3b8f::t_1cbac5e38a75f8 16-17,33-34
+  s_b7df082f1a3b8f::t_9cde0e51cde663 91,101-102
+src/renderer/src/pages/Tasks/index.tsx
+  s_b7df082f1a3b8f::t_b4c0b1f44892e9 39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "5b1d8e643d43a270973ea5b01d0bd1ff1815f316",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
