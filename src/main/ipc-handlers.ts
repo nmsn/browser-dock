@@ -36,6 +36,7 @@ import { getNextRunTime } from './scheduler/cron-scheduler'
 import { cancelExecution } from './cancel-registry'
 import { exportExecutionLogsCsv } from './log-export'
 import { initInspection } from './inspection'
+import { getFeature, listFeatures } from './automation/features/registry'
 import { PROFILES_PATH, DEFAULT_CONFIG } from './config'
 import type {
   CreateAccountInput,
@@ -213,22 +214,35 @@ export function registerIpcHandlers(): void {
     if (typeof input.name !== 'string' || input.name.trim() === '') {
       throw new Error('Task name is required')
     }
-    if (typeof input.script !== 'string' || input.script.trim() === '') {
+    const type = input.type ?? 'custom'
+    if (type === 'feature') {
+      if (!input.featureId || !getFeature(input.featureId)) {
+        throw new Error(`Unknown featureId: ${input.featureId ?? '(empty)'}`)
+      }
+      if (!input.payload || typeof input.payload !== 'object') {
+        throw new Error('Feature task requires payload object')
+      }
+    } else if (typeof input.script !== 'string' || input.script.trim() === '') {
       throw new Error('Task script is required')
     }
     const task = dbCreateTask({
       id: `task-${randomUUID()}`,
       name: input.name.trim(),
-      type: input.type ?? 'custom',
-      script: input.script,
+      type,
+      script: type === 'feature' ? '' : (input.script as string),
       config: input.config ?? {},
       allowedApis: normalizeAllowedApis(input.allowedApis),
+      featureId: type === 'feature' ? input.featureId : undefined,
+      payload: type === 'feature' ? input.payload : undefined,
       timeoutMs: input.timeoutMs ?? DEFAULT_CONFIG.defaultTimeoutMs,
       retryPolicy: input.retryPolicy ?? DEFAULT_CONFIG.defaultRetryPolicy
     })
     logger.info({ taskId: task.id }, 'Task created')
     return task
   })
+
+  // ============ 内置功能（docs/c48-integration-plan.md Phase C）============
+  ipcMain.handle('features:list', () => listFeatures())
 
   ipcMain.handle('tasks:update', (_event, id: string, patch: Partial<CreateTaskInput>) => {
     if (typeof id !== 'string' || !id) throw new Error('Task id is required')

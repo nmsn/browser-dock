@@ -199,6 +199,18 @@ const MIGRATIONS: Migration[] = [
       CREATE INDEX idx_execution_logs_started_at ON execution_logs(started_at);
       CREATE INDEX idx_diagnostics_captured_at ON page_diagnostics(captured_at);
     `
+  },
+  {
+    version: 4,
+    name: 'feature_tasks',
+    sql: `
+      -- 内置功能任务（docs/c48-integration-plan.md Phase C）
+      ALTER TABLE tasks ADD COLUMN feature_id TEXT;
+      ALTER TABLE tasks ADD COLUMN payload TEXT;
+
+      -- 废弃的旧任务类型迁移为 custom 手写脚本类型
+      UPDATE tasks SET type = 'custom' WHERE type IN ('live-control', 'product');
+    `
   }
 ]
 

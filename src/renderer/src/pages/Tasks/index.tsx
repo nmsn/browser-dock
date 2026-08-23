@@ -36,8 +36,7 @@ import type { TaskType, ScriptApi } from '../../../../shared/types'
  */
 
 const typeMap: Record<TaskType, { label: string }> = {
-  'live-control': { label: '直播控制' },
-  product: { label: '商品管理' },
+  feature: { label: '内置功能' },
   custom: { label: '自定义' }
 }
 

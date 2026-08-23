@@ -13,6 +13,8 @@ interface TaskRow {
   script: string
   config: string | null
   allowed_apis: string | null
+  feature_id: string | null
+  payload: string | null
   version: number
   timeout_ms: number
   retry_policy: string
@@ -28,6 +30,8 @@ function rowToTask(row: TaskRow): Task {
     script: row.script,
     config: row.config ? (JSON.parse(row.config) as Record<string, unknown>) : {},
     allowedApis: row.allowed_apis ? (JSON.parse(row.allowed_apis) as ScriptApi[]) : undefined,
+    featureId: row.feature_id ?? undefined,
+    payload: row.payload ? (JSON.parse(row.payload) as Record<string, unknown>) : undefined,
     version: row.version,
     timeoutMs: row.timeout_ms,
     retryPolicy: JSON.parse(row.retry_policy) as RetryPolicy,
@@ -51,8 +55,8 @@ export function createTask(task: Omit<Task, 'createdAt' | 'updatedAt' | 'version
   const full: Task = { ...task, version: 1, createdAt: now, updatedAt: now }
   getDatabase()
     .prepare(
-      `INSERT INTO tasks (id, name, type, script, config, allowed_apis, version, timeout_ms, retry_policy, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO tasks (id, name, type, script, config, allowed_apis, feature_id, payload, version, timeout_ms, retry_policy, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       full.id,
@@ -61,6 +65,8 @@ export function createTask(task: Omit<Task, 'createdAt' | 'updatedAt' | 'version
       full.script,
       JSON.stringify(full.config),
       full.allowedApis ? JSON.stringify(full.allowedApis) : null,
+      full.featureId ?? null,
+      full.payload ? JSON.stringify(full.payload) : null,
       full.version,
       full.timeoutMs,
       JSON.stringify(full.retryPolicy),
@@ -82,7 +88,7 @@ export function updateTask(id: string, patch: Partial<Omit<Task, 'id' | 'created
   getDatabase()
     .prepare(
       `UPDATE tasks SET
-        name = ?, type = ?, script = ?, config = ?, allowed_apis = ?, version = ?,
+        name = ?, type = ?, script = ?, config = ?, allowed_apis = ?, feature_id = ?, payload = ?, version = ?,
         timeout_ms = ?, retry_policy = ?, updated_at = ?
        WHERE id = ?`
     )
@@ -92,6 +98,8 @@ export function updateTask(id: string, patch: Partial<Omit<Task, 'id' | 'created
       merged.script,
       JSON.stringify(merged.config),
       merged.allowedApis ? JSON.stringify(merged.allowedApis) : null,
+      merged.featureId ?? null,
+      merged.payload ? JSON.stringify(merged.payload) : null,
       merged.version,
       merged.timeoutMs,
       JSON.stringify(merged.retryPolicy),

@@ -112,7 +112,7 @@ c48 全流程收敛为：直连中控台详情页 → 弹窗分段执行。**不
 | A2 网络捕获 | ✅ 完成 | typecheck+build 通过 | - |
 | A3 页面脚本层 | ⬜ 未开始 | - | - |
 | B 页面识别与修正 | ✅ 完成 | typecheck+build 通过；live-control stub 已删除 | - |
-| C Feature 框架+迁移 v4 | ⬜ 未开始 | - | - |
+| C Feature 框架+迁移 v4 | ✅ 完成 | typecheck+build+executor smoke 通过；迁移 v4 自动应用 | - |
 | D c48 实现 | ⬜ 未开始 | - | - |
 | D-verify fixture 回归 | ⬜ 未开始 | - | - |
 | E UI | ⬜ 未开始 | - | - |

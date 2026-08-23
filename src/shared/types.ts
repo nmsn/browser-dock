@@ -70,9 +70,11 @@ export interface AccountRuntime {
 
 /**
  * 任务类型
- * @see 文档 2.4 Task.type
+ * @see 文档 2.4 Task.type / docs/c48-integration-plan.md Phase C
+ * - feature：内置功能（主进程编排，payload 参数化）
+ * - custom：用户手写 JS（vm 沙箱 + allowedApis 白名单）
  */
-export type TaskType = 'live-control' | 'product' | 'custom'
+export type TaskType = 'feature' | 'custom'
 
 /**
  * 重试策略
@@ -93,8 +95,12 @@ export interface Task {
   type: TaskType
   script: string
   config: Record<string, unknown>
-  /** 任务级脚本 API 白名单（文档 9.2）；undefined 表示允许全部白名单 API */
+  /** 任务级脚本 API 白名单（文档 9.2）；undefined 表示允许全部白名单 API（仅 custom 生效） */
   allowedApis?: ScriptApi[]
+  /** type === 'feature' 时使用的内置功能 id */
+  featureId?: string
+  /** type === 'feature' 时的功能参数 */
+  payload?: Record<string, unknown>
   version: number
   timeoutMs: number
   retryPolicy: RetryPolicy
@@ -457,6 +463,9 @@ export interface DockAPI {
   tasksUpdate: (id: string, patch: Partial<Omit<Task, 'id' | 'createdAt' | 'version'>>) => Promise<Task | null>
   tasksDelete: (id: string) => Promise<boolean>
 
+  // 内置功能
+  featuresList: () => Promise<FeatureInfo[]>
+
   // 调度管理（文档 2.3.1 调度管理）
   schedulesList: () => Promise<Schedule[]>
   schedulesCreate: (input: CreateScheduleInput) => Promise<Schedule>
@@ -507,8 +516,39 @@ export interface CreateTaskInput {
   script: string
   config?: Record<string, unknown>
   allowedApis?: ScriptApi[]
+  featureId?: string
+  payload?: Record<string, unknown>
   timeoutMs?: number
   retryPolicy?: RetryPolicy
+}
+
+// ============================================================================
+// 内置功能（feature 任务）
+// ============================================================================
+
+/** 功能表单选项（级联树节点） */
+export interface FeatureFieldOption {
+  label: string
+  value: string
+  children?: FeatureFieldOption[]
+}
+
+/** 功能参数字段描述（驱动 UI 动态表单） */
+export interface FeatureField {
+  key: string
+  label: string
+  type: 'string' | 'cascader'
+  required?: boolean
+  placeholder?: string
+  help?: string
+  /** type === 'cascader' 时的选项树 */
+  options?: FeatureFieldOption[]
+}
+
+export interface FeatureInfo {
+  id: string
+  label: string
+  fields: FeatureField[]
 }
 
 /**

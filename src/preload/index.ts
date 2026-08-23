@@ -49,6 +49,9 @@ const api: DockAPI = {
     ipcRenderer.invoke('tasks:update', id, patch),
   tasksDelete: (id: string) => ipcRenderer.invoke('tasks:delete', id),
 
+  // 内置功能
+  featuresList: () => ipcRenderer.invoke('features:list'),
+
   // 调度管理
   schedulesList: () => ipcRenderer.invoke('schedules:list'),
   schedulesCreate: (input: CreateScheduleInput) => ipcRenderer.invoke('schedules:create', input),

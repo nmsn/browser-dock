@@ -21,6 +21,9 @@ import { createDiagnostic } from '../store/diagnostics'
 import { emitExecutionStatus, emitExecutionLog } from '../execution-events'
 import { registerCancellable, unregisterCancellable } from '../cancel-registry'
 import { notifyExecutionResult } from '../notifier'
+import { NetworkCaptureService } from '../automation/network-capture'
+import type { CdpClient } from '../chrome/cdp-client'
+import { getFeature, type FeatureContext, type FeatureRunResult } from '../automation/features/registry'
 
 /**
  * 任务执行器
@@ -113,21 +116,39 @@ export async function executeTask(
     await cdp.send('Page.enable')
     await cdp.send('Runtime.enable')
 
-    record('running', 'Running user script')
-    const context = buildAutomationContext(account, cdp, taskLogger(executionId), abortController.signal)
-
-    // 受限沙箱执行（9.2 脚本权限边界），带有限重试（8.3 重试原则）
-    await runWithRetry(
-      () => runScript(task.script, context, timeoutMs, task.allowedApis),
-      task.retryPolicy?.maxAttempts ?? 1,
-      task.retryPolicy?.backoffMs ?? 5000,
-      {
+    if (task.type === 'feature') {
+      record('running', `Running feature ${task.featureId ?? ''}`)
+      const featureResult = await runFeatureTask(task, {
+        cdp,
+        executionId,
         signal: abortController.signal,
-        onRetry: (attempt, err) => {
-          record('retrying', `Attempt ${attempt} failed: ${err instanceof Error ? err.message : String(err)}`)
-        }
+        timeoutMs,
+        onAttemptFail: (attempt, message) => record('retrying', `Attempt ${attempt} failed: ${message}`)
+      })
+      execution.result = { featureId: task.featureId, ...featureResult }
+      dbUpdateLog(executionId, { result: execution.result })
+      emitExecutionLog(execution as ExecutionLog)
+      // 业务失败（ok:false）不重试、直接走失败路径，避免副作用段重复执行
+      if (!featureResult.ok) {
+        throw new Error(featureResult.detail || `feature ${task.featureId ?? ''} failed`)
       }
-    )
+    } else {
+      record('running', 'Running user script')
+      const context = buildAutomationContext(account, cdp, taskLogger(executionId), abortController.signal)
+
+      // 受限沙箱执行（9.2 脚本权限边界），带有限重试（8.3 重试原则）
+      await runWithRetry(
+        () => runScript(task.script, context, timeoutMs, task.allowedApis),
+        task.retryPolicy?.maxAttempts ?? 1,
+        task.retryPolicy?.backoffMs ?? 5000,
+        {
+          signal: abortController.signal,
+          onRetry: (attempt, err) => {
+            record('retrying', `Attempt ${attempt} failed: ${err instanceof Error ? err.message : String(err)}`)
+          }
+        }
+      )
+    }
 
     execution.duration = Date.now() - startTime
     record('success', `Completed in ${execution.duration}ms`)
@@ -171,6 +192,51 @@ export async function executeTask(
   }
 
   return execution as ExecutionLog
+}
+
+/**
+ * 内置功能任务执行（docs/c48-integration-plan.md Phase C）
+ * 主进程直接编排（不经 vm 沙箱）；重试仅针对抛出的基础设施异常，
+ * 业务失败（ok:false）由调用方直接判失败，避免副作用段重复执行。
+ */
+async function runFeatureTask(
+  task: Task,
+  deps: {
+    cdp: CdpClient
+    executionId: string
+    signal: AbortSignal
+    timeoutMs: number
+    onAttemptFail: (attempt: number, message: string) => void
+  }
+): Promise<FeatureRunResult> {
+  const feature = task.featureId ? getFeature(task.featureId) : null
+  if (!feature) {
+    throw new Error(`TK_FEATURE_NOT_FOUND: ${task.featureId ?? '(no featureId)'}`)
+  }
+
+  const network = new NetworkCaptureService()
+  network.attach(deps.cdp)
+  await network.enable(deps.cdp)
+  // 跨域 iframe（coupon / smf）按需自动附着
+  await deps.cdp.enableAutoAttach()
+
+  const ctx: FeatureContext = {
+    cdp: deps.cdp,
+    network,
+    logger: taskLogger(deps.executionId),
+    signal: deps.signal
+  }
+
+  return runWithRetry(
+    () => feature.run(ctx, task.payload ?? {}),
+    task.retryPolicy?.maxAttempts ?? 1,
+    task.retryPolicy?.backoffMs ?? 5000,
+    {
+      signal: deps.signal,
+      onRetry: (attempt, err) =>
+        deps.onAttemptFail(attempt, err instanceof Error ? err.message : String(err))
+    }
+  )
 }
 
 /**
@@ -289,12 +355,12 @@ interface RetryOptions {
  * - 每次重试记录 attempt，禁止无限重试
  * - 取消信号到达时立即中止
  */
-async function runWithRetry(
-  fn: () => Promise<void>,
+async function runWithRetry<T>(
+  fn: () => Promise<T>,
   maxAttempts: number,
   backoffMs: number,
   options: RetryOptions = {}
-): Promise<void> {
+): Promise<T> {
   const attempts = Math.max(1, maxAttempts)
   let lastErr: unknown
 
