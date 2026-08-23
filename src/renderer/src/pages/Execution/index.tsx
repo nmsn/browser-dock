@@ -277,6 +277,7 @@ export default function ExecutionPage() {
                   <TableHead>状态</TableHead>
                   <TableHead>耗时</TableHead>
                   <TableHead>开始时间</TableHead>
+                  <TableHead>功能步骤</TableHead>
                   <TableHead>错误</TableHead>
                   <TableHead className="text-right">操作</TableHead>
                 </TableRow>
@@ -294,6 +295,21 @@ export default function ExecutionPage() {
                       </TableCell>
                       <TableCell>{formatDuration(log.duration)}</TableCell>
                       <TableCell>{new Date(log.startedAt).toLocaleString('zh-CN')}</TableCell>
+                      <TableCell className="max-w-[220px]">
+                        {log.result && typeof log.result === 'object' && 'steps' in log.result ? (
+                          <div className="flex flex-wrap gap-1">
+                            {Object.entries(
+                              (log.result as { steps?: Record<string, boolean> }).steps ?? {}
+                            ).map(([key, done]) => (
+                              <Badge key={key} variant={done ? 'default' : 'outline'} className="text-[10px]">
+                                {done ? '✓' : '○'} {key}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">
                         {log.error ?? '—'}
                       </TableCell>

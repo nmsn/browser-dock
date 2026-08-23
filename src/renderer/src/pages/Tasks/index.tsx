@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/dialog'
 import { useTasksStore } from '@/store/useTasksStore'
 import { useAccountsStore } from '@/store/useAccountsStore'
-import type { TaskType, ScriptApi } from '../../../../shared/types'
+import type { TaskType, ScriptApi, FeatureInfo, FeatureFieldOption } from '../../../../shared/types'
 
 /**
  * 任务管理页面
@@ -114,15 +114,49 @@ function CreateTaskDialog() {
   const [allowedApis, setAllowedApis] = useState<ScriptApi[]>(ALL_APIS)
   const [submitting, setSubmitting] = useState(false)
 
+  // feature 任务状态
+  const [features, setFeatures] = useState<FeatureInfo[]>([])
+  const [featureId, setFeatureId] = useState('')
+  const [payload, setPayload] = useState<Record<string, unknown>>({})
+  const activeFeature = features.find((f) => f.id === featureId)
+
+  useEffect(() => {
+    if (!open || features.length > 0) return
+    void window.dock.featuresList().then(setFeatures).catch(() => setFeatures([]))
+  }, [open, features.length])
+
+  const setPayloadValue = (key: string, value: unknown) => {
+    setPayload((prev) => ({ ...prev, [key]: value }))
+  }
+
+  /** 级联字段：把选项树拍平为「完整路径」下拉项 */
+  const flattenLeafPaths = (
+    options: FeatureFieldOption[],
+    prefix: string[] = []
+  ): Array<{ label: string; path: string[] }> => {
+    return options.flatMap((opt) => {
+      const path = [...prefix, opt.value]
+      if (opt.children?.length) return flattenLeafPaths(opt.children, path)
+      return [{ label: path.join(' / '), path }]
+    })
+  }
+
   const handleSubmit = async () => {
-    if (!name.trim() || !script.trim()) return
+    if (type === 'feature') {
+      if (!name.trim() || !featureId) return
+    } else if (!name.trim() || !script.trim()) {
+      return
+    }
     setSubmitting(true)
+    const isFeature = type === 'feature'
     const created = await createTask({
       name,
       type,
-      script,
+      script: isFeature ? '' : script,
+      ...(isFeature ? { featureId, payload } : { allowedApis }),
       timeoutMs: Number(timeoutMs) || 120000,
-      allowedApis
+      // 内置功能含副作用段（如真实发放优惠券），默认不自动重试
+      retryPolicy: isFeature ? { maxAttempts: 1, backoffMs: 5000 } : undefined
     })
     setSubmitting(false)
     if (created) {
@@ -131,9 +165,16 @@ function CreateTaskDialog() {
       setScript('')
       setTimeoutMs('120000')
       setAllowedApis(ALL_APIS)
+      setFeatureId('')
+      setPayload({})
       setOpen(false)
     }
   }
+
+  const submitDisabled =
+    submitting ||
+    !name.trim() ||
+    (type === 'feature' ? !featureId : !script.trim())
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -144,7 +185,7 @@ function CreateTaskDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>创建任务</DialogTitle>
-          <DialogDescription>定义自动化任务脚本与参数</DialogDescription>
+          <DialogDescription>选择内置功能或定义自定义自动化脚本</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
@@ -154,29 +195,97 @@ function CreateTaskDialog() {
           <div className="space-y-2">
             <Label>任务类型</Label>
             <Select value={type} onChange={(e) => setType(e.target.value as TaskType)}>
-              <option value="custom">自定义</option>
-              <option value="live-control">直播控制</option>
-              <option value="product">商品管理</option>
+              <option value="custom">自定义脚本</option>
+              <option value="feature">内置功能</option>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label>脚本内容</Label>
-            <Textarea
-              value={script}
-              onChange={(e) => setScript(e.target.value)}
-              placeholder={'async function run(ctx) {\n  // ctx.page / ctx.logger / ctx.signal ...\n  await ctx.page.navigate("https://live.taobao.com/admin");\n}'}
-              className="min-h-[180px] font-mono text-xs"
-            />
-          </div>
+
+          {type === 'feature' && (
+            <>
+              <div className="space-y-2">
+                <Label>内置功能</Label>
+                <Select
+                  value={featureId}
+                  onChange={(e) => {
+                    setFeatureId(e.target.value)
+                    setPayload({})
+                  }}
+                >
+                  <option value="">请选择功能</option>
+                  {features.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.label}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              {activeFeature?.fields.map((field) => (
+                <div key={field.key} className="space-y-2">
+                  <Label>
+                    {field.label}
+                    {field.required && <span className="text-destructive"> *</span>}
+                  </Label>
+                  {field.type === 'cascader' ? (
+                    (() => {
+                      const leaves = flattenLeafPaths(field.options ?? [])
+                      const current = (payload[field.key] as string[] | undefined) ?? []
+                      const currentKey = current.join('/')
+                      return (
+                        <Select
+                          value={currentKey}
+                          onChange={(e) => {
+                            const leaf = leaves.find((l) => l.path.join('/') === e.target.value)
+                            setPayloadValue(field.key, leaf ? leaf.path : [])
+                          }}
+                        >
+                          <option value="">默认（不限）</option>
+                          {leaves.map((leaf) => (
+                            <option key={leaf.label} value={leaf.label}>
+                              {leaf.label}
+                            </option>
+                          ))}
+                        </Select>
+                      )
+                    })()
+                  ) : (
+                    <Input
+                      value={(payload[field.key] as string | undefined) ?? ''}
+                      onChange={(e) => setPayloadValue(field.key, e.target.value)}
+                      placeholder={field.placeholder}
+                    />
+                  )}
+                  {field.help && <p className="text-xs text-muted-foreground">{field.help}</p>}
+                </div>
+              ))}
+              <p className="text-xs text-muted-foreground">
+                内置功能包含真实副作用操作（如投放优惠券），默认不自动重试
+              </p>
+            </>
+          )}
+
+          {type === 'custom' && (
+            <>
+              <div className="space-y-2">
+                <Label>脚本内容</Label>
+                <Textarea
+                  value={script}
+                  onChange={(e) => setScript(e.target.value)}
+                  placeholder={'async function run(ctx) {\n  // ctx.page / ctx.logger / ctx.signal ...\n  await ctx.page.navigate("https://liveplatform.taobao.com/restful/index/home/dashboard");\n}'}
+                  className="min-h-[180px] font-mono text-xs"
+                />
+              </div>
+              <ApiPermissionSelector selected={allowedApis} onChange={setAllowedApis} />
+            </>
+          )}
+
           <div className="space-y-2">
             <Label>超时（毫秒）</Label>
             <Input value={timeoutMs} onChange={(e) => setTimeoutMs(e.target.value)} placeholder="120000" type="number" />
           </div>
-          <ApiPermissionSelector selected={allowedApis} onChange={setAllowedApis} />
         </div>
         <DialogFooter>
           <DialogClose render={<Button variant="outline" />}>取消</DialogClose>
-          <Button onClick={handleSubmit} disabled={submitting || !name.trim() || !script.trim()}>
+          <Button onClick={handleSubmit} disabled={submitDisabled}>
             {submitting ? '创建中...' : '创建'}
           </Button>
         </DialogFooter>
@@ -365,7 +474,12 @@ export default function TasksPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{typeMap[task.type]?.label ?? task.type}</Badge>
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="secondary">{typeMap[task.type]?.label ?? task.type}</Badge>
+                        {task.type === 'feature' && task.featureId && (
+                          <span className="font-mono text-xs text-muted-foreground">{task.featureId}</span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">v{task.version}</Badge>
