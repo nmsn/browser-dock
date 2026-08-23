@@ -1,0 +1,66 @@
+src/main/tray.ts
+  s_b7df082f1a3b8f::t_678186938eb884 24-25
+docs/project-architecture-design.md
+  s_b7df082f1a3b8f::t_f7f8724003e0bb 985
+  s_b7df082f1a3b8f::t_2b18a4210d0ede 1081-1085,1087,1091-1093
+  s_b7df082f1a3b8f::t_27d6c1c13206a0 961
+  s_b7df082f1a3b8f::t_45753c7c73347d 1015
+src/main/scheduler/task-executor.ts
+  s_b7df082f1a3b8f::t_317955a1782a1d 371-372,377
+package.json
+  s_b7df082f1a3b8f::t_8cbb5fd1e9debf 43
+  s_b7df082f1a3b8f::t_6b6c8f22cfa1c9 16
+  s_b7df082f1a3b8f::t_b43c28e184fb58 13
+.github/workflows/build-windows.yml
+  s_b7df082f1a3b8f::t_af24ddd152beb0 1-55
+src/main/automation/runtime/page-adapter.ts
+  s_b7df082f1a3b8f::t_234bf4b3b3eaff 1
+src/main/automation/taobao/login-detector.ts
+  s_b7df082f1a3b8f::t_ba04cf28920e43 32
+  s_b7df082f1a3b8f::t_ef94b40ce5783a 65
+src/main/chrome/cdp-client.ts
+  s_b7df082f1a3b8f::t_fed06a2160c69c 2
+  s_b7df082f1a3b8f::t_42bee4ec1119c3 61,64
+tsconfig.web.json
+  s_b7df082f1a3b8f::t_894436394ee04a 18
+  s_b7df082f1a3b8f::t_6c1a55324f4589 21
+src/renderer/src/App.tsx
+  s_b7df082f1a3b8f::t_c64c168c9ff7b2 2
+electron-builder.yml
+  s_b7df082f1a3b8f::t_dac7b5b031724f 34,36-45
+  s_b7df082f1a3b8f::t_28ea95797247d1 35
+src/main/ipc-handlers.ts
+  s_b7df082f1a3b8f::t_b2c5b27f5b1ca4 332
+src/main/retention.ts
+  s_b7df082f1a3b8f::t_341195b7c61ff8 22
+  s_b7df082f1a3b8f::t_573d0b3438de93 3
+README.md
+  s_b7df082f1a3b8f::t_5537c0d2258a33 29-33
+src/main/notifier.ts
+  s_b7df082f1a3b8f::t_abfc29546b2035 2
+src/main/execution-events.ts
+  s_b7df082f1a3b8f::t_e311792daa0f87 2
+src/main/inspection.ts
+  s_b7df082f1a3b8f::t_aea3bd36e56a1b 32
+  s_b7df082f1a3b8f::t_5ea790f3549011 1
+tsconfig.node.json
+  s_b7df082f1a3b8f::t_79c3f83ee95997 15
+pnpm-lock.yaml
+  s_b7df082f1a3b8f::t_861e0d212a7a36 75-77,1151-1153,3576-3579
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "b96308237720b16ee6ca476aa65d80564a31b1b6",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
