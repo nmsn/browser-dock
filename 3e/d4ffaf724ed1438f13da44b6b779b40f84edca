@@ -1,0 +1,24 @@
+docs/c48-integration-plan.md
+  s_b7df082f1a3b8f::t_e42c3f094d1ba6 111
+  s_b7df082f1a3b8f::t_f86be8d1e64145 1-110,112-119
+src/main/chrome/cdp-client.ts
+  s_b7df082f1a3b8f::t_43f0cf817c88a0 49-50
+  s_b7df082f1a3b8f::t_ca18ed5a06a057 32-41
+  s_b7df082f1a3b8f::t_96d5e559ca56cf 98-102,105-106,119-179,185-228
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "3ed4ffaf724ed1438f13da44b6b779b40f84edca",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
