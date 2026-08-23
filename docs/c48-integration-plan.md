@@ -111,7 +111,7 @@ c48 全流程收敛为：直连中控台详情页 → 弹窗分段执行。**不
 | A1 跨 frame 支持 | ✅ 完成 | typecheck+build 通过 | - |
 | A2 网络捕获 | ✅ 完成 | typecheck+build 通过 | - |
 | A3 页面脚本层 | ⬜ 未开始 | - | - |
-| B 页面识别与修正 | ⬜ 未开始 | - | - |
+| B 页面识别与修正 | ✅ 完成 | typecheck+build 通过；live-control stub 已删除 | - |
 | C Feature 框架+迁移 v4 | ⬜ 未开始 | - | - |
 | D c48 实现 | ⬜ 未开始 | - | - |
 | D-verify fixture 回归 | ⬜ 未开始 | - | - |
