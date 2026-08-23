@@ -1,0 +1,22 @@
+docs/c48-integration-plan.md
+  s_b7df082f1a3b8f::t_dd09ee68e94a88 119
+docs/project-architecture-design.md
+  s_b7df082f1a3b8f::t_587ee9720de43e 1083
+  s_b7df082f1a3b8f::t_0f594840e1f27c 1091,1097
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "a1cf518250c670aed4b9e43bed54948228abfb3c",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
