@@ -958,7 +958,7 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 | 工具 | 用途 | 备注 |
 |------|------|------|
 | electron-vite | 主/preload/renderer 三端 Vite 打包 | 替代 electron-forge |
-| electron-builder | 生成 dmg/zip 安装包 | 仅 macOS，Phase 1 无签名 |
+| electron-builder | 生成 dmg/zip（macOS）与 nsis exe（Windows，CI 原生构建）安装包 | 无签名 |
 | @tailwindcss/vite | Tailwind CSS 4 Vite 插件 | 用于 renderer |
 | @electron/rebuild | 原生模块重编译 | 备用，正常情况下 electron-vite 自动处理 |
 
@@ -982,7 +982,7 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 
 - 仅 macOS（dmg + zip）
 - 不配置代码签名和公证（Phase 1 本机自用）
-- Windows 打包暂缓：electron-builder.yml 已验证过 nsis 交叉编译可行，但 `@napi-rs/keyring` 的 win32 原生模块在 macOS 上无法通过 pnpm 提升到 node_modules 根目录（`supportedArchitectures` 只装入 `.pnpm`），交叉产物运行时会缺模块；需在 Windows 环境或 CI 上原生构建
+- Windows 打包：通过 GitHub Actions 在 `windows-latest` 上原生构建（`.github/workflows/build-windows.yml`，手动触发或推送 `v*` tag）。macOS 交叉编译不可行的原因不变：`@napi-rs/keyring` 的 win32 原生模块无法在 macOS 上提升到 node_modules 根目录；CI 上原生安装后由 electron-builder 正确 unpack
 - 后续如需分发，再配置签名和公证
 
 ### 15.5 错误码字典（草案）
@@ -1012,7 +1012,7 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 | **Phase 1** 基础框架 | ✅ 100% | Electron 初始化 / SQLite + 迁移 / 备份 / Chrome 管理 / Profile 锁 / 账号管理 UI / 登录流程 |
 | **Phase 2** 自动化引擎 | ✅ 100% | CDP 客户端 / 基础操作封装 / AutomationContext / 登录状态 + 账号身份检测 / 任务管理 UI |
 | **Phase 3** 定时调度 | ✅ 100% | Cron 调度器 / 多账号并行 / 账号锁 / 状态机 / 超时取消重试 / 执行日志 / 执行监控 UI |
-| **Phase 4** 优化完善 | ✅ 95% | 重试 / DOM 快照 / 打包验证 / 通知 / CSV 导出 / 实时推送 / 取消 / 下次运行时间 / 应用设置页 / 保留期清理 / 脚本权限白名单 / 备份恢复 / 托盘 / 低频巡检 / 数据库索引 全部完成；仅剩 Windows 打包（本期决策暂缓）与 Mihomo 集成（低优先级） |
+| **Phase 4** 优化完善 | ✅ 100% | 重试 / DOM 快照 / 打包验证 / 通知 / CSV 导出 / 实时推送 / 取消 / 下次运行时间 / 应用设置页 / 保留期清理 / 脚本权限白名单 / 备份恢复 / 托盘 / 低频巡检 / 数据库索引 / Windows 打包（CI 原生构建）全部完成；仅 Mihomo 集成按决策记录暂缓（见 16.6） |
 
 ### 16.2 关键模块映射（设计规范 → 实际代码）
 
@@ -1078,18 +1078,19 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 
 ### 16.6 后续开发路线图
 
-| 优先级 | 项目 | 文档章节 |
-|-------|------|---------|
-| 高 | Windows 打包（nsis 配置已验证，需 Windows/CI 原生构建，本期决策暂缓） | 10.2 / 15.4 |
-| 低 | Mihomo 代理管理集成（需分发 mihomo 二进制） | 2.6.2 |
-| 低 | 性能优化进阶（启动时间、Chrome 池化；数据库索引已完成） | Phase 4 |
+| 优先级 | 项目 | 文档章节 | 状态 |
+|-------|------|---------|------|
+| 高 | Windows 打包（GitHub Actions `windows-latest` 原生构建 nsis，`pnpm build:win` 本地脚本备用） | 10.2 / 15.4 | ✅ 已完成（待 CI 首次运行验证） |
+| 低 | Mihomo 代理管理集成（需分发 mihomo 二进制）——已记录，按决策暂缓实现，当前仅 `proxyConfig` 字段占位 | 2.6.2 | 📝 记录暂缓 |
+| 低 | 性能优化进阶（启动时间、Chrome 池化；数据库索引已完成） | Phase 4 | 📝 记录暂缓 |
 
-> Phase 1-3 全部完成，Phase 4 除上述暂缓项外全部完成。
+> Phase 1-4 全部完成；Mihomo 集成与性能优化进阶仅记录、暂缓实现。
 
 ### 16.7 已知限制
 
-- 仅 macOS 打包（Windows nsis 配置已验证可行但按本期决策暂缓，见 15.4 交叉编译原生模块限制）
-- 无代码签名 / 公证（首启需手动「右键打开」）
+- Windows 安装包由 CI 产出（尚未实际运行验证）；macOS 交叉编译 Windows 不可行（原生模块限制，见 15.4）
+- 无代码签名 / 公证（macOS 首启需手动「右键打开」；Windows 首启 SmartScreen 提示属预期）
+- 未提供应用自定义图标（`build/icon.icns` / `build/icon.ico` 缺失，使用默认 Electron 图标）
 - Chrome `--disable-background-timer-throttling` 仅降低节流，不解决睡眠场景（文档 5.1 / 10.3 明确）
 - 未实现 Mihomo 集成（文档 1.2 提到「完整代理管理」，目前仅支持 `proxyConfig` 字段占位）
 - 设置页已支持开机自启动（`app.setLoginItemSettings`），开发环境未打包时会报系统权限错误（仅噪音，不影响功能）

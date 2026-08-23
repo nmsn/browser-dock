@@ -1,5 +1,5 @@
 import { BrowserWindow } from 'electron'
-import type { ExecutionLog, ExecutionStatus } from '../../shared/types'
+import type { ExecutionLog, ExecutionStatus } from '../shared/types'
 
 /**
  * 执行事件推送

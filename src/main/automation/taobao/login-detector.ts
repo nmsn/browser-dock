@@ -29,6 +29,7 @@ export async function detectLoginStatus(page: PageAdapter): Promise<LoginDetecti
   const result = await page.evaluate<{
     href: string
     loggedIn: boolean
+    isLoginUrl: boolean
     hasLoginForm: boolean
     hasCaptcha: boolean
     hasRiskNotice: boolean
@@ -61,7 +62,7 @@ export async function detectLoginStatus(page: PageAdapter): Promise<LoginDetecti
 
       const nick = userEl?.textContent?.trim()?.slice(0, 30) ?? '';
 
-      return { href, loggedIn, hasLoginForm: !!loginForm, hasCaptcha: !!captcha, hasRiskNotice: risk, loginNick: nick };
+      return { href, loggedIn, isLoginUrl, hasLoginForm: !!loginForm, hasCaptcha: !!captcha, hasRiskNotice: risk, loginNick: nick };
     })()
   `)
 

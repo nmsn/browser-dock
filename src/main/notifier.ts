@@ -1,5 +1,5 @@
 import { Notification, app } from 'electron'
-import type { ExecutionLog } from '../../shared/types'
+import type { ExecutionLog } from '../shared/types'
 import { getSettings } from './store/settings'
 
 /**

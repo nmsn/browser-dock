@@ -1,4 +1,5 @@
 import WebSocket from 'ws'
+import type { RawData } from 'ws'
 import type { AccountRuntime } from '../../shared/types'
 
 /**
@@ -57,10 +58,10 @@ export class CdpClient {
     return new Promise((resolve, reject) => {
       this.ws = new WebSocket(this.debugUrl)
       this.ws.on('open', () => resolve())
-      this.ws.on('error', (err) => {
+      this.ws.on('error', (err: Error) => {
         reject(new Error(`CDP_CONNECT_FAILED: ${this.debugUrl} — ${err.message}`))
       })
-      this.ws.on('message', (data) => {
+      this.ws.on('message', (data: RawData) => {
         const msg = JSON.parse(data.toString()) as CDPResponse & CDPEvent
         // 有 id 则是命令响应
         if (typeof msg.id === 'number') {

@@ -4,7 +4,6 @@
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "outDir": "out",
-    "rootDir": "src/renderer/src",
     "jsx": "react-jsx",
     "strict": true,
     "esModuleInterop": true,
@@ -16,9 +15,9 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/renderer/src/*"]
     }
   },
-  "include": ["src/renderer/src/**/*"],
+  "include": ["src/renderer/src/**/*", "shared/**/*", "src/preload/**/*.d.ts"],
   "exclude": ["node_modules", "out"]
 }

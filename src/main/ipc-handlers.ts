@@ -329,7 +329,7 @@ export function registerIpcHandlers(): void {
     return listExecutionLogs({
       accountId,
       taskId,
-      status: status as Parameters<typeof listExecutionLogs>[0]['status'],
+      status: status as NonNullable<Parameters<typeof listExecutionLogs>[0]>['status'],
       limit
     })
   })

@@ -4,7 +4,6 @@
     "module": "commonjs",
     "lib": ["ESNext"],
     "outDir": "out",
-    "rootDir": "src/main",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -13,6 +12,6 @@
     "moduleResolution": "node",
     "isolatedModules": true
   },
-  "include": ["src/main/**/*"],
+  "include": ["src/main/**/*", "shared/**/*"],
   "exclude": ["node_modules", "out"]
 }

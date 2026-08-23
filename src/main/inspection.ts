@@ -1,4 +1,4 @@
-import cron from 'node-cron'
+import cron, { type ScheduledTask } from 'node-cron'
 import type { Account, Task } from '../shared/types'
 import { getSettings } from './store/settings'
 import { listAccounts } from './store/accounts'
@@ -29,7 +29,7 @@ const title = await ctx.page.evaluate('document.title');
 ctx.logger.info('Inspection page title: ' + title);
 `
 
-let inspectionTask: cron.ScheduledTask | null = null
+let inspectionTask: ScheduledTask | null = null
 
 /**
  * 确保巡检探针任务存在于数据库（execution_logs.task_id 有外键约束）

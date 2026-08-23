@@ -1,0 +1,55 @@
+name: Build Windows
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    name: Windows x64 (nsis)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      # 原生模块（better-sqlite3 / @napi-rs/keyring）必须在 Windows 上原生安装，
+      # macOS 交叉编译会缺 win32 二进制（见 docs 15.4）
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build (electron-vite)
+        run: pnpm build
+
+      - name: Package (electron-builder nsis)
+        run: pnpm exec electron-builder --win --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Verify native modules unpacked
+        shell: pwsh
+        run: |
+          $asar = Get-ChildItem "dist/win-unpacked/resources/app.asar.unpacked/node_modules" -Recurse -Filter *.node | Select-Object -ExpandProperty FullName
+          if (-not $asar) { throw "No .node files found in app.asar.unpacked" }
+          $asar
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-dock-win-x64-${{ github.sha }}
+          path: |
+            dist/*.exe
+            dist/*.blockmap
+          if-no-files-found: error

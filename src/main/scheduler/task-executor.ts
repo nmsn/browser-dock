@@ -368,13 +368,13 @@ async function savePageDiagnostic(
   if (!cdp) return
   try {
     const [urlResult, titleResult, domResult, consoleResult, screenshotResult] = await Promise.allSettled([
-      cdp.send('Runtime.evaluate', { expression: 'window.location.href', returnByValue: true }),
-      cdp.send('Runtime.evaluate', { expression: 'document.title', returnByValue: true }),
+      cdp.send<{ result?: { value?: unknown } }>('Runtime.evaluate', { expression: 'window.location.href', returnByValue: true }),
+      cdp.send<{ result?: { value?: unknown } }>('Runtime.evaluate', { expression: 'document.title', returnByValue: true }),
       cdp.send<{ result: { value: string } }>('Runtime.evaluate', {
         expression: 'document.documentElement.outerHTML',
         returnByValue: true
       }),
-      cdp.send<{ exceptionDetails?: { exception?: { description?: string } } }>('Runtime.evaluate', {
+      cdp.send<{ result?: { value?: unknown }; exceptionDetails?: { exception?: { description?: string } } }>('Runtime.evaluate', {
         expression: 'window.__collectedConsoleErrors || []',
         returnByValue: true
       }),

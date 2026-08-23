@@ -21,7 +21,8 @@ function loadIcon(): Electron.NativeImage {
   if (icon.isEmpty()) {
     logger.warn({ iconPath }, 'Tray icon not found, using empty image')
   }
-  return icon.setTemplateImage(true)
+  icon.setTemplateImage(true)
+  return icon
 }
 
 export function createTray(onShow: () => void): Tray {

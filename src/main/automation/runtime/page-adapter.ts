@@ -1,4 +1,4 @@
-import type { CdpClient } from '../chrome/cdp-client'
+import type { CdpClient } from '../../chrome/cdp-client'
 import type { PageAdapter } from '../../../shared/types'
 
 /**

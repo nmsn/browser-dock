@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, statSync, unlinkSync } from 'fs'
 import { join } from 'path'
-import cron from 'node-cron'
+import cron, { type ScheduledTask } from 'node-cron'
 import { getDatabase } from './store/database'
 import { SCREENSHOTS_PATH } from './config'
 import { getSettings } from './store/settings'
@@ -19,7 +19,7 @@ import logger from './logger'
 
 const CLEANUP_CRON = '0 0 3 * * *'
 
-let cleanupTask: cron.ScheduledTask | null = null
+let cleanupTask: ScheduledTask | null = null
 
 export interface RetentionCleanupResult {
   logsDeleted: number

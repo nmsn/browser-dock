@@ -31,3 +31,15 @@ dmg:
       y: 220
       type: link
       path: /Applications
+win:
+  # 无证书不签名；未提供 icon 时使用默认图标（与 mac 现状一致）
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  shortcutName: Browser Dock
