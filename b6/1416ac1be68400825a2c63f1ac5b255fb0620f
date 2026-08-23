@@ -1,0 +1,85 @@
+src/main/automation/page-script/index.ts
+  s_b7df082f1a3b8f::t_ec9a746f4afdb4 1-41
+package.json
+  s_b7df082f1a3b8f::t_60e4480a9e76da 52
+scripts/build-page-scripts.mjs
+  s_b7df082f1a3b8f::t_d3f6251d254946 1-30
+src/main/raw.d.ts
+  s_b7df082f1a3b8f::t_98e0c79392d0dc 1-4
+tsconfig.node.json
+  s_b7df082f1a3b8f::t_33e055ac14597a 16
+src/main/automation/page-script/vendor/src/entry/main.ts
+  s_b7df082f1a3b8f::t_7839dddc26892e 1-108
+src/main/automation/page-script/vendor/src/platforms/taobao/features/c48-coupon-send/dom/open-coupon-dialog.ts
+  s_b7df082f1a3b8f::t_d1a138c5929d08 1-130
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/claim-condition/index.ts
+  s_b7df082f1a3b8f::t_97d756cda7095c 1-11
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/claim-condition/trees.ts
+  s_b7df082f1a3b8f::t_c84e2f82eabc88 1-138
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/adapters/cascader/index.ts
+  s_b7df082f1a3b8f::t_567532f5dd4984 1-7
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/adapters/cascader/next-ant-cascader.ts
+  s_b7df082f1a3b8f::t_1678a2a464fe97 1-597
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/adapters/checkbox/index.ts
+  s_b7df082f1a3b8f::t_9ada4af54805db 1-2
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/adapters/date-picker/index.ts
+  s_b7df082f1a3b8f::t_7627f60214a873 1-446
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/adapters/index.ts
+  s_b7df082f1a3b8f::t_017875efc0fd2b 1-62
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/adapters/select/index.ts
+  s_b7df082f1a3b8f::t_d21c7a31b73944 1-101
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/adapters/select/next-fusion-multi-select.ts
+  s_b7df082f1a3b8f::t_70d170d309e458 1-242
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/adapters/select/next-fusion-select.ts
+  s_b7df082f1a3b8f::t_1f87283263bc21 1-164
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/adapters/select/next-fusion-shared.ts
+  s_b7df082f1a3b8f::t_63363bc08baaa3 1-374
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/adapters/select/tbd-ant-select.ts
+  s_b7df082f1a3b8f::t_0ecf025f487280 1-593
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/adapters/text-input/index.ts
+  s_b7df082f1a3b8f::t_34394c2fc9d87e 1-2
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/adapters/types.ts
+  s_b7df082f1a3b8f::t_a51864ce80f3d3 1-30
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/adapters/upload/index.ts
+  s_b7df082f1a3b8f::t_8a8dd0f90d3a89 1-2
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/deep-dom.ts
+  s_b7df082f1a3b8f::t_108c81741d36ea 1-82
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/finders.ts
+  s_b7df082f1a3b8f::t_08340401237f2a 1-234
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/form-options.ts
+  s_b7df082f1a3b8f::t_3147b08c70fe83 1-420
+src/main/automation/page-script/vendor/src/platforms/taobao/shared/dom/utils.ts
+  s_b7df082f1a3b8f::t_ffb7aa0e7ece4c 1
+src/main/automation/page-script/vendor/src/shared/automation/delay.ts
+  s_b7df082f1a3b8f::t_db2b79d97afeac 1-47
+src/main/automation/page-script/vendor/src/shared/automation/dom-actions.ts
+  s_b7df082f1a3b8f::t_8c30f0c6d01d5d 1-538
+src/main/automation/page-script/vendor/src/shared/automation/execution-guard.ts
+  s_b7df082f1a3b8f::t_247d0fc6c72736 1-508
+src/main/automation/page-script/vendor/src/shared/automation/format-duration.ts
+  s_b7df082f1a3b8f::t_273a6e1e8b04a8 1-25
+src/main/automation/page-script/vendor/src/shared/automation/sleep.ts
+  s_b7df082f1a3b8f::t_eec50d1f8356ea 1-11
+src/main/automation/page-script/vendor/src/shared/automation/step-guards.ts
+  s_b7df082f1a3b8f::t_a1822de27c7e24 1-45
+src/main/automation/page-script/vendor/src/shared/automation/wait.ts
+  s_b7df082f1a3b8f::t_19d1645b858db4 1-53
+src/main/automation/page-script/vendor/src/platforms/taobao/features/c48-coupon-send/dom/fill-coupon-dialog.ts
+  s_b7df082f1a3b8f::t_86cccc52648e56 1-782
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.23",
+  "base_commit_sha": "b61416ac1be68400825a2c63f1ac5b255fb0620f",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
