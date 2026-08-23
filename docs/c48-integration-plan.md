@@ -116,4 +116,4 @@ c48 全流程收敛为：直连中控台详情页 → 弹窗分段执行。**不
 | D c48 实现 | ✅ 完成 | typecheck+build 通过；feature 注册 + 七段编排 | - |
 | D-verify fixture 回归 | ✅ 完成 | 11/11 断言通过（帧附着/注入/选券/网络捕获/投放/关壳）；顺带修复上游 findTbdSelectTrigger 潜在 bug | - |
 | E UI | ✅ 完成 | typecheck+build+fixture+executor smoke 全通过 | - |
-| F Windows CI 修复 | ✅ 提前完成 | allowBuilds 布尔格式已本地验证，待推送确认 CI | - |
+| F Windows CI 修复 | ✅ 完成并验证 | allowBuilds 布尔格式 + prebuild 钩子；CI run 32623912294 成功，产出 x64 exe 工件（115MB） | 1102721 |

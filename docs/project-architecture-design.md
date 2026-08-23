@@ -1080,7 +1080,7 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 
 | 优先级 | 项目 | 文档章节 | 状态 |
 |-------|------|---------|------|
-| 高 | Windows 打包（GitHub Actions `windows-latest` 原生构建 nsis，`pnpm build:win` 本地脚本备用） | 10.2 / 15.4 | ✅ 已完成（待 CI 首次运行验证） |
+| 高 | Windows 打包（GitHub Actions `windows-latest` 原生构建 nsis，`pnpm build:win` 本地脚本备用）——CI 已实际运行成功并产出安装包工件 | 10.2 / 15.4 | ✅ 已完成并验证 |
 | 低 | Mihomo 代理管理集成（需分发 mihomo 二进制）——已记录，按决策暂缓实现，当前仅 `proxyConfig` 字段占位 | 2.6.2 | 📝 记录暂缓 |
 | 低 | 性能优化进阶（启动时间、Chrome 池化；数据库索引已完成） | Phase 4 | 📝 记录暂缓 |
 
@@ -1088,11 +1088,11 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 
 ### 16.7 已知限制
 
-- Windows 安装包由 CI 产出（尚未实际运行验证）；macOS 交叉编译 Windows 不可行（原生模块限制，见 15.4）
+- Windows 安装包由 CI 产出（已验证：run 32623912294 成功产出 x64 nsis exe 工件）；macOS 交叉编译 Windows 不可行（原生模块限制，见 15.4）
 - 无代码签名 / 公证（macOS 首启需手动「右键打开」；Windows 首启 SmartScreen 提示属预期）
 - 未提供应用自定义图标（`build/icon.icns` / `build/icon.ico` 缺失，使用默认 Electron 图标）
 - Chrome `--disable-background-timer-throttling` 仅降低节流，不解决睡眠场景（文档 5.1 / 10.3 明确）
 - 未实现 Mihomo 集成（文档 1.2 提到「完整代理管理」，目前仅支持 `proxyConfig` 字段占位）
 - 设置页已支持开机自启动（`app.setLoginItemSettings`），开发环境未打包时会报系统权限错误（仅噪音，不影响功能）
-- 低频巡检探针仅验证中控台页面可达性（导航 + body 就绪 + 标题记录），未覆盖具体业务选择器；真实选择器需在接入实际业务时补充
+- 低频巡检探针仅验证中控台页面可达性（导航 + body 就绪 + 标题记录，已改用真实 dashboard URL）；业务选择器覆盖随 c48 接入框架落地，其余功能待后续移植
 - 巡检 / 清理暂无手动触发入口（巡检可通过开关即时生效，清理随启动和每日定时执行）
