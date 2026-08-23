@@ -96,7 +96,10 @@ export function findTbdSelectRoot(scope: ParentNode): Element | undefined {
 }
 
 export function findTbdSelectTrigger(scope: ParentNode): Element | undefined {
-  const root = findTbdSelectRoot(scope) ?? (scope instanceof Element ? scope : undefined);
+  // browser-dock 修复（相对上游）：原实现在无任何匹配时回退返回 scope 自身，
+  // 导致「任意可见字段都被误判为 TBD 下拉」，非 select 控件（内联 radio 等）
+  // 永远走不到正确的分支。此处仅在真正找到 root 时才允许 root 兜底。
+  const root = findTbdSelectRoot(scope);
   const searchIn: ParentNode = root ?? scope;
   const selector = queryFirstVisible(searchIn, SELECTOR_TRIGGER_SELECTOR);
   if (selector) return selector;

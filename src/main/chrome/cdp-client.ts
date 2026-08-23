@@ -129,9 +129,23 @@ export class CdpClient {
       this.attachedTargets.set(params.sessionId, {
         targetId: params.targetInfo.targetId,
         sessionId: params.sessionId,
+        // OOPIF 首次附着时 url 可能为空，随后由 targetInfoChanged 补全
         url: params.targetInfo.url ?? '',
         type: params.targetInfo.type ?? ''
       })
+    })
+    this.onEvent('Target.targetInfoChanged', (event) => {
+      const target = event.params as
+        | { targetId?: string; url?: string; type?: string }
+        | undefined
+      if (!target?.targetId) return
+      // 该事件为按 targetId 的广播，不带 sessionId
+      for (const existing of this.attachedTargets.values()) {
+        if (existing.targetId === target.targetId) {
+          existing.url = target.url ?? existing.url
+          existing.type = target.type ?? existing.type
+        }
+      }
     })
     this.onEvent('Target.detachedFromTarget', (event) => {
       const params = event.params as { sessionId?: string } | undefined

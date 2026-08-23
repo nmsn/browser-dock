@@ -332,14 +332,15 @@ export function readSelectDisplayNearLabel(
   if (findTbdSelectRoot(scope) || findTbdSelectTrigger(scope)) {
     return readTbdSelectDisplay(scope);
   }
-  const nextMulti = findNextMultiSelectRoot(scope)
-    ?? findNextMultiSelectByLabel(fieldLabels, root);
+  const nextMulti =
+    findNextMultiSelectRoot(scope) ?? findNextMultiSelectByLabel(fieldLabels, root);
   if (nextMulti) {
     return readNextMultiSelectDisplay(nextMulti);
   }
-  const nextRoot = findNextSelectRoot(scope)
-    ?? findNextSelectByLabel(fieldLabels, root, { multiple: false })
-    ?? findNextSelectTrigger(scope);
+  const nextRoot =
+    findNextSelectRoot(scope) ??
+    findNextSelectByLabel(fieldLabels, root, { multiple: false }) ??
+    findNextSelectTrigger(scope);
   if (nextRoot) {
     return readNextSelectDisplay(nextRoot);
   }

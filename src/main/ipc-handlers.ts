@@ -36,7 +36,7 @@ import { getNextRunTime } from './scheduler/cron-scheduler'
 import { cancelExecution } from './cancel-registry'
 import { exportExecutionLogsCsv } from './log-export'
 import { initInspection } from './inspection'
-import { getFeature, listFeatures } from './automation/features/registry'
+import { getFeature, listFeatures } from './automation/features'
 import { PROFILES_PATH, DEFAULT_CONFIG } from './config'
 import type {
   CreateAccountInput,

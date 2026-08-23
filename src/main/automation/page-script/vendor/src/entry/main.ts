@@ -15,10 +15,16 @@ import {
   findClickableByText,
 } from '../platforms/taobao/shared/dom/finders';
 import {
+  clickElement,
   findElementByText,
   getElementVisibleText,
   normalizeVisibleText,
 } from '../shared/automation/dom-actions';
+import { selectOptionNearLabel } from '../platforms/taobao/shared/dom/form-options';
+import {
+  optionMatchesNearLabel,
+  readSelectDisplayNearLabel,
+} from '../platforms/taobao/shared/dom/form-options';
 import { WaitTimeout } from '../shared/automation/wait';
 import {
   openCouponDialog,
@@ -42,6 +48,10 @@ interface BdLib {
   findElementByText: typeof findElementByText
   getElementVisibleText: typeof getElementVisibleText
   normalizeVisibleText: typeof normalizeVisibleText
+  selectOptionNearLabel: typeof selectOptionNearLabel
+  clickElement: typeof clickElement
+  optionMatchesNearLabel: typeof optionMatchesNearLabel
+  readSelectDisplayNearLabel: typeof readSelectDisplayNearLabel
   /** 页面 body 可见文本是否同时包含全部片段 */
   bodyTextIncludes: (...fragments: string[]) => boolean
 }
@@ -91,6 +101,10 @@ window.__BD = {
   findElementByText,
   getElementVisibleText,
   normalizeVisibleText,
+  selectOptionNearLabel,
+  clickElement,
+  optionMatchesNearLabel,
+  readSelectDisplayNearLabel,
   bodyTextIncludes
 }
 
