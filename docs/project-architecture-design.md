@@ -1091,7 +1091,7 @@ Chrome Profile 包含淘宝登录 Cookie、LocalStorage 和设备信息，应当
 - Windows 安装包由 CI 产出（已验证：run 32623912294 成功产出 x64 nsis exe 工件）；macOS 交叉编译 Windows 不可行（原生模块限制，见 15.4）
 - 无代码签名 / 公证（macOS 首启需手动「右键打开」；Windows 首启 SmartScreen 提示属预期）
 - 未提供应用自定义图标（`build/icon.icns` / `build/icon.ico` 缺失，使用默认 Electron 图标）
-- Chrome `--disable-background-timer-throttling` 仅降低节流，不解决睡眠场景（文档 5.1 / 10.3 明确）
+- Chrome 已禁用三类后台节流（timer throttling / occluded windows 挂起 / renderer 降级），窗口遮挡与最小化不影响自动化；系统睡眠场景仍无解（文档 5.1 / 10.3 明确）
 - 未实现 Mihomo 集成（文档 1.2 提到「完整代理管理」，目前仅支持 `proxyConfig` 字段占位）
 - 设置页已支持开机自启动（`app.setLoginItemSettings`），开发环境未打包时会报系统权限错误（仅噪音，不影响功能）
 - 低频巡检探针仅验证中控台页面可达性（导航 + body 就绪 + 标题记录，已改用真实 dashboard URL）；业务选择器覆盖随 c48 接入框架落地，其余功能待后续移植

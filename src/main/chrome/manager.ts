@@ -78,6 +78,10 @@ export async function startChromeForAccount(account: Account): Promise<ChromeIns
     throw new Error('CHROME_NOT_FOUND: Chrome executable not found')
   }
 
+  // 后台节流防护（文档 10.3 / 5.1）：
+  // - disable-background-timer-throttling：后台 tab 定时器不降频
+  // - disable-backgrounding-occluded-windows：窗口被遮挡时不挂起 renderer（Windows 关键）
+  // - disable-renderer-backgrounding：不降级后台 renderer 进程优先级
   const child = spawn(
     chromePath,
     [
@@ -85,7 +89,9 @@ export async function startChromeForAccount(account: Account): Promise<ChromeIns
       `--user-data-dir=${profilePath}`,
       '--no-first-run',
       '--no-default-browser-check',
-      '--disable-background-timer-throttling'
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding'
     ],
     { stdio: ['ignore', 'pipe', 'pipe'] }
   )
