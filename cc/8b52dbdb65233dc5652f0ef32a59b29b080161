@@ -1,0 +1,32 @@
+src/main/run-log-reader.ts
+  s_b7df082f1a3b8f::t_a45bea7daba7c6 1-72
+src/renderer/src/pages/Execution/index.tsx
+  s_b7df082f1a3b8f::t_4479334890c2a0 470
+  s_b7df082f1a3b8f::t_588f053630d62f 149-300
+  s_b7df082f1a3b8f::t_dd598955f46a49 1-2
+  s_b7df082f1a3b8f::t_45e250824dfb34 27
+src/shared/types.ts
+  s_b7df082f1a3b8f::t_294c8288a6d640 611-621
+  s_b7df082f1a3b8f::t_42939a4ec5ff3d 485-487
+src/main/ipc-handlers.ts
+  s_b7df082f1a3b8f::t_dea7551fb42f2a 352-357
+  s_b7df082f1a3b8f::t_ae1c139ca1bd08 27
+src/preload/index.ts
+  s_b7df082f1a3b8f::t_e73536c4c3841a 76-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "cc8b52dbdb65233dc5652f0ef32a59b29b080161",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
