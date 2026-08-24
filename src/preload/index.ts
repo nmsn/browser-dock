@@ -73,6 +73,9 @@ const api: DockAPI = {
     ipcRenderer.invoke('diagnostics:list', executionId),
   diagnosticsGet: (id: string) => ipcRenderer.invoke('diagnostics:get', id),
 
+  // 运行日志
+  executionRunLogs: (executionId: string) => ipcRenderer.invoke('execution:run-logs', executionId),
+
   // 应用设置
   settingsGet: () => ipcRenderer.invoke('settings:get'),
   settingsUpdate: (patch: UpdateSettingsInput) => ipcRenderer.invoke('settings:update', patch),

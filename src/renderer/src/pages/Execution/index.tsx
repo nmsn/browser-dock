@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { RefreshCw, XCircle, Download, FileSearch } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { RefreshCw, XCircle, Download, FileSearch, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -24,7 +24,7 @@ import {
 import { useExecutionStore } from '@/store/useExecutionStore'
 import { useTasksStore } from '@/store/useTasksStore'
 import { useAccountsStore } from '@/store/useAccountsStore'
-import type { ExecutionStatus, PageDiagnostic } from '../../../../shared/types'
+import type { ExecutionStatus, PageDiagnostic, ExecutionLog, RunLogEntry, StateTransition } from '../../../../shared/types'
 
 /**
  * 执行监控页面
@@ -139,6 +139,158 @@ function DiagnosticViewer({ executionId }: { executionId: string }) {
           </div>
         )}
         <div className="flex justify-end pt-4">
+          <DialogClose render={<Button variant="outline" />}>关闭</DialogClose>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+const runLogLevelStyle: Record<RunLogEntry['level'], string> = {
+  debug: 'text-muted-foreground',
+  info: 'text-foreground',
+  warn: 'text-yellow-600 dark:text-yellow-400',
+  error: 'text-destructive'
+}
+
+/**
+ * 执行详情弹窗（docs 计划 L3）
+ * 概要 / 步进标志 / 状态机时间线 / 运行日志（pino 按 executionId 过滤）
+ */
+function ExecutionDetailDialog({ log }: { log: ExecutionLog }) {
+  const [open, setOpen] = useState(false)
+  const [runLogs, setRunLogs] = useState<RunLogEntry[] | null>(null)
+  const [loadingLogs, setLoadingLogs] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    setLoadingLogs(true)
+    window.dock
+      .executionRunLogs(log.id)
+      .then(setRunLogs)
+      .catch(() => setRunLogs([]))
+      .finally(() => setLoadingLogs(false))
+  }, [open, log.id])
+
+  const transitions = useMemo<StateTransition[]>(
+    () =>
+      (log.result && typeof log.result === 'object'
+        ? ((log.result as Record<string, unknown>)['_transitions'] as StateTransition[] | undefined)
+        : undefined) ?? [],
+    [log.result]
+  )
+  const steps = useMemo<Record<string, boolean>>(
+    () =>
+      (log.result && typeof log.result === 'object'
+        ? ((log.result as Record<string, unknown>).steps as Record<string, boolean> | undefined)
+        : undefined) ?? {},
+    [log.result]
+  )
+
+  const status = statusMap[log.status] ?? statusMap.queued
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="ghost" size="icon" title="执行详情" />}>
+        <Info className="h-4 w-4" />
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>执行详情</DialogTitle>
+          <DialogDescription className="font-mono text-xs">{log.id}</DialogDescription>
+        </DialogHeader>
+
+        {/* 概要 */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+          <div>
+            <span className="text-muted-foreground">状态：</span>
+            <Badge variant={status.variant}>{status.label}</Badge>
+          </div>
+          <div>
+            <span className="text-muted-foreground">来源：</span>
+            {log.scheduleId ? '定时调度' : '手动'}
+          </div>
+          <div>
+            <span className="text-muted-foreground">耗时：</span>
+            {formatDuration(log.duration)}
+          </div>
+          <div>
+            <span className="text-muted-foreground">开始：</span>
+            {new Date(log.startedAt).toLocaleString('zh-CN')}
+          </div>
+        </div>
+        {log.error && (
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive break-all">
+            {log.error}
+          </div>
+        )}
+
+        {/* 步进标志 */}
+        {Object.keys(steps).length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-sm font-medium">功能步骤</p>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(steps).map(([key, done]) => (
+                <Badge key={key} variant={done ? 'default' : 'outline'}>
+                  {done ? '✓' : '○'} {key}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 状态机时间线 */}
+        {transitions.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-sm font-medium">状态时间线</p>
+            <ol className="space-y-1 text-xs font-mono">
+              {transitions.map((t, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="text-muted-foreground shrink-0">
+                    {new Date(t.at).toLocaleTimeString('zh-CN')}
+                  </span>
+                  <span>
+                    {t.from === 'init' ? '' : `${t.from} → `}
+                    <span className="font-semibold">{t.to}</span>
+                    {t.message ? ` — ${t.message}` : ''}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
+        {/* 运行日志 */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">运行日志</p>
+            {runLogs && (
+              <span className="text-xs text-muted-foreground">{runLogs.length} 条</span>
+            )}
+          </div>
+          {!runLogs || loadingLogs ? (
+            <p className="text-xs text-muted-foreground">加载中…</p>
+          ) : runLogs.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              无匹配日志（开发模式不写文件日志，或已超出保留的日期文件范围）
+            </p>
+          ) : (
+            <pre className="max-h-72 overflow-auto rounded-md bg-muted p-3 text-xs leading-relaxed font-mono">
+              {runLogs.map((entry, i) => (
+                <div key={i} className={runLogLevelStyle[entry.level]}>
+                  <span className="text-muted-foreground">
+                    {entry.time ? new Date(entry.time).toLocaleTimeString('zh-CN') : ''}{' '}
+                    [{entry.level}]{' '}
+                  </span>
+                  {entry.message}
+                  {entry.data ? ` ${JSON.stringify(entry.data)}` : ''}
+                </div>
+              ))}
+            </pre>
+          )}
+        </div>
+
+        <div className="flex justify-end pt-2">
           <DialogClose render={<Button variant="outline" />}>关闭</DialogClose>
         </div>
       </DialogContent>
@@ -315,6 +467,7 @@ export default function ExecutionPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <ExecutionDetailDialog log={log} />
                           {(log.status === 'failed' || log.status === 'timeout') && (
                             <DiagnosticViewer executionId={log.id} />
                           )}

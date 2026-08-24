@@ -482,6 +482,9 @@ export interface DockAPI {
   diagnosticsList: (executionId: string) => Promise<PageDiagnostic[]>
   diagnosticsGet: (id: string) => Promise<PageDiagnostic | null>
 
+  // 运行日志（pino 文件按 executionId 过滤）
+  executionRunLogs: (executionId: string) => Promise<RunLogEntry[]>
+
   // 应用设置（文档 2.3.1 设置）
   settingsGet: () => Promise<AppSettings>
   settingsUpdate: (patch: UpdateSettingsInput) => Promise<AppSettings>
@@ -604,4 +607,15 @@ export interface PageDiagnostic {
   screenshotPath?: string
   consoleErrors?: string[]
   networkErrors?: NetworkResponse[]
+}
+
+// ============================================================================
+// 执行运行日志（来自 pino 按日期文件，按 executionId 过滤）
+// ============================================================================
+
+export interface RunLogEntry {
+  time: string
+  level: 'debug' | 'info' | 'warn' | 'error'
+  message: string
+  data?: Record<string, unknown>
 }

@@ -24,6 +24,7 @@ import {
 } from './store/schedules'
 import { listExecutionLogs } from './store/logs'
 import { listDiagnostics, getDiagnostic } from './store/diagnostics'
+import { readRunLogs } from './run-log-reader'
 import { getSettings, updateSettings, applyLaunchAtLogin } from './store/settings'
 import { listBackups, backupDatabase } from './store/backup'
 import { restoreDatabaseFromBackup } from './store/restore'
@@ -346,6 +347,12 @@ export function registerIpcHandlers(): void {
       status: status as NonNullable<Parameters<typeof listExecutionLogs>[0]>['status'],
       limit
     })
+  })
+
+  // 运行日志（pino 按日期文件按 executionId 过滤，docs 计划 L3）
+  ipcMain.handle('execution:run-logs', (_event, executionId: string) => {
+    if (typeof executionId !== 'string' || !executionId) throw new Error('executionId is required')
+    return readRunLogs(executionId)
   })
 
   // 取消执行（文档 8.3 任务取消支持 AbortSignal）
