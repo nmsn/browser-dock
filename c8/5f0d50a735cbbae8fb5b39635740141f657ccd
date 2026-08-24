@@ -1,0 +1,31 @@
+src/main/scheduler/service.ts
+  s_b7df082f1a3b8f::t_e5b366e115a2b1 9
+  s_b7df082f1a3b8f::t_9fc9c7b013a7b5 151
+  s_b7df082f1a3b8f::t_b35fbd31bb830c 102-104,111-112,114,127-129
+src/main/scheduler/task-executor.ts
+  s_b7df082f1a3b8f::t_b59c1459ec549e 69
+  s_b7df082f1a3b8f::t_bc8767bcf5b253 47-49
+  s_b7df082f1a3b8f::t_25457fd98ad647 23
+  s_b7df082f1a3b8f::t_21700d44b815c7 110-113
+src/main/inspection.ts
+  s_b7df082f1a3b8f::t_eca4719c9c48c9 76
+src/main/notifier.ts
+  s_b7df082f1a3b8f::t_4d5dc5c48d45ad 72-95
+  s_b7df082f1a3b8f::t_38ce2fd3c32327 14-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "c85f0d50a735cbbae8fb5b39635740141f657ccd",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
