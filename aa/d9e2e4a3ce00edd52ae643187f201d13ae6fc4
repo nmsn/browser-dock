@@ -1,0 +1,23 @@
+src/main/scheduler/task-executor.ts
+  s_b7df082f1a3b8f::t_4e0068baca0277 482-484,487,496-497
+src/main/retention.ts
+  s_b7df082f1a3b8f::t_8baefb82e16f6b 10,12-15,37,40,43-44,53
+src/renderer/src/pages/Settings/index.tsx
+  s_b7df082f1a3b8f::t_0bfdb98ade518f 295-297
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "aad9e2e4a3ce00edd52ae643187f201d13ae6fc4",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
