@@ -23,6 +23,9 @@ mac:
   identity: null
   category: public.app-category.productivity
   icon: build/icon.icns
+  # 防 macOS App Nap 休眠主进程导致 cron 调度延迟（文档 10.3）
+  extendInfo:
+    NSAppSleepDisabled: true
 dmg:
   contents:
     - x: 130
