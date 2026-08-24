@@ -1,0 +1,22 @@
+src/main/logger.ts
+  s_b7df082f1a3b8f::t_52d40a29d1bad0 40-41
+  s_b7df082f1a3b8f::t_ca92567d7c7c9b 1,5-37,42-45,53-60
+pnpm-lock.yaml
+  s_b7df082f1a3b8f::t_38f823d5146427 16,1627-1629,3029,3040,4204-4206
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "eb5b6512eb5840bb8bd3e29750b663a9029a6278",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
