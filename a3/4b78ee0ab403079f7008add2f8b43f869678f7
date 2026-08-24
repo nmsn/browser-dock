@@ -1,0 +1,36 @@
+src/shared/types.ts
+  s_b7df082f1a3b8f::t_fd16cff1c2e4ff 406-407
+src/main/store/settings.ts
+  s_b7df082f1a3b8f::t_9cbb089da7a56d 72-74
+  s_b7df082f1a3b8f::t_aa88a3fe4f245d 26
+src/renderer/src/pages/Settings/index.tsx
+  s_b7df082f1a3b8f::t_25f808db968dee 332-336
+  s_b7df082f1a3b8f::t_8197ac9f92b9e9 224
+  s_ad2895473b98f2::t_bac5b178a50f22 331
+src/main/chrome/manager.ts
+  s_b7df082f1a3b8f::t_1aa410badc7bbc 85-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "a34b78ee0ab403079f7008add2f8b43f869678f7",
+  "prompts": {},
+  "sessions": {
+    "s_ad2895473b98f2": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fe3283250ffeA03AW7QlOf08J1",
+        "model": "MiniMax-M3"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    },
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
