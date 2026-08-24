@@ -1,0 +1,21 @@
+src/renderer/src/pages/Tasks/index.tsx
+  s_b7df082f1a3b8f::t_f18d57ec30294a 575
+  s_b7df082f1a3b8f::t_90e377d71fa87c 2
+  s_b7df082f1a3b8f::t_49a295340095e8 330-413
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "db83c7bd24f546db805e57e5f39105a23874565e",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
