@@ -24,6 +24,7 @@ import { notifyExecutionResult, notifyExecutionStart } from '../notifier'
 import { NetworkCaptureService } from '../automation/network-capture'
 import type { CdpClient } from '../chrome/cdp-client'
 import { getFeature, type FeatureContext, type FeatureRunResult } from '../automation/features/registry'
+import { getSettings } from '../store/settings'
 
 /**
  * 任务执行器
@@ -63,6 +64,9 @@ export async function executeTask(
 ): Promise<ExecutionLog> {
   const executionId = `exec-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 
+  // 全局并发槽位是否已获得（finally 中按需释放）
+  let slotAcquired = false
+
   // 创建执行日志
   const execution = dbCreateLog({
     id: executionId,
@@ -87,6 +91,23 @@ export async function executeTask(
     emitExecutionStatus(status, { id: executionId, taskId: task.id, accountId: account.id, status })
   }
 
+  // 取消控制器先于排队注册，等待槽位期间也可取消（文档 8.3）
+  const abortController = new AbortController()
+  options.signal?.addEventListener('abort', () => abortController.abort(options.signal?.reason))
+  registerCancellable(executionId, abortController)
+
+  // 全局并发闸门：跨调度/手动/巡检统一限制 Chrome 实例总数；
+  // 排队时间不计入任务超时（timeout 在获得槽位后起算）
+  try {
+    await acquireGlobalSlot(abortController.signal)
+  } catch (err) {
+    record('cancelled', 'Cancelled while queued')
+    dbUpdateLog(executionId, { finishedAt: new Date().toISOString() })
+    unregisterCancellable(executionId)
+    throw err
+  }
+  slotAcquired = true
+
   // 账号互斥锁（5.3 同一账号同一时间只执行一个任务）
   if (!acquireAccountLock(account.id, executionId)) {
     const err = new Error('PROFILE_LOCKED: account is already running')
@@ -95,13 +116,8 @@ export async function executeTask(
   }
 
   const startTime = Date.now()
-  const abortController = new AbortController()
   const timeoutMs = task.timeoutMs ?? 120_000
   const timeoutId = setTimeout(() => abortController.abort('timeout'), timeoutMs)
-  options.signal?.addEventListener('abort', () => abortController.abort(options.signal?.reason))
-
-  // 注册到可取消控制器注册表（文档 8.3 任务取消支持 AbortSignal）
-  registerCancellable(executionId, abortController)
 
   let cdp: Awaited<ReturnType<typeof createPageCdpClient>> | null = null
 
@@ -189,6 +205,7 @@ export async function executeTask(
   } finally {
     clearTimeout(timeoutId)
     unregisterCancellable(executionId)
+    if (slotAcquired) releaseGlobalSlot()
     // 关闭浏览器，释放锁（6.3 关闭和异常清理）
     try {
       await stopChromeForAccount(account.id)
@@ -496,4 +513,50 @@ async function savePageDiagnostic(
   } catch (err) {
     logger.warn({ executionId, err }, 'Failed to save page diagnostic')
   }
+}
+
+// ============================================================================
+// 全局并发闸门（docs 计划 Phase I）
+// 容量 = settings.maxConcurrency，跨定时调度/手动/巡检统一限制同时执行的
+// Chrome 实例总数；动态容量（设置变更后对后续准入即时生效）
+// ============================================================================
+
+let activeSlots = 0
+const slotWaiters: Array<() => void> = []
+
+function pumpGlobalSlots(): void {
+  const capacity = Math.max(1, getSettings().maxConcurrency)
+  while (activeSlots < capacity && slotWaiters.length > 0) {
+    const wake = slotWaiters.shift()!
+    activeSlots += 1
+    wake()
+  }
+}
+
+async function acquireGlobalSlot(signal?: AbortSignal): Promise<void> {
+  const capacity = Math.max(1, getSettings().maxConcurrency)
+  if (activeSlots < capacity && slotWaiters.length === 0) {
+    activeSlots += 1
+    return
+  }
+  return new Promise<void>((resolve, reject) => {
+    const onAbort = () => {
+      const idx = slotWaiters.indexOf(wake)
+      if (idx >= 0) slotWaiters.splice(idx, 1)
+      reject(new DOMException('Aborted', 'AbortError'))
+    }
+    const wake = () => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }
+    slotWaiters.push(wake)
+    signal?.addEventListener('abort', onAbort, { once: true })
+    // 排队期间容量被调大时立即放行
+    pumpGlobalSlots()
+  })
+}
+
+function releaseGlobalSlot(): void {
+  activeSlots = Math.max(0, activeSlots - 1)
+  pumpGlobalSlots()
 }
