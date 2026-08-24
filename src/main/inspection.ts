@@ -73,7 +73,7 @@ export async function runInspection(): Promise<number> {
   logger.info({ count: accounts.length }, 'Inspection started')
   await runWithConcurrency(accounts, getSettings().maxConcurrency, async (account) => {
     try {
-      await executeTask(account, task)
+      await executeTask(account, task, { source: 'inspection' })
     } catch (err) {
       // 单账号失败不阻塞其他账号；失败详情已在执行日志和诊断中
       logger.warn(

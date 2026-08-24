@@ -11,6 +11,21 @@ import { getSettings } from './store/settings'
 
 let initialized = false
 
+function notify(title: string, body: string): boolean {
+  if (!getSettings().notifyOnExecution) return false
+  if (!Notification.isSupported()) return false
+  try {
+    const notification = new Notification({ title, body, silent: false })
+    notification.show()
+    return true
+  } catch (err) {
+    // 通知失败不应阻塞主流程
+    // eslint-disable-next-line no-console
+    console.warn('Failed to show notification:', err)
+    return false
+  }
+}
+
 /**
  * 初始化通知（确保 app 已 ready + 设置 appId）
  */
@@ -54,16 +69,28 @@ export function notifyExecutionResult(
       return // 其他状态不发通知
   }
 
-  try {
-    const notification = new Notification({
-      title,
-      body,
-      silent: false
-    })
-    notification.show()
-  } catch (err) {
-    // 通知失败不应阻塞主流程
-    // eslint-disable-next-line no-console
-    console.warn('Failed to show notification:', err)
-  }
+  notify(title, body)
+}
+
+/**
+ * 定时任务开始通知（仅调度来源调用）
+ */
+export function notifyExecutionStart(
+  _log: Partial<ExecutionLog>,
+  options: { taskName: string; accountName: string }
+): void {
+  notify('▶ 定时任务开始', `${options.taskName} · ${options.accountName}`)
+}
+
+/**
+ * 定时批次汇总通知（全部账号执行完毕后调用）
+ */
+export function notifyExecutionSummary(
+  options: { taskName: string; success: number; failed: number }
+): void {
+  const total = options.success + options.failed
+  notify(
+    options.failed === 0 ? '✓ 定时任务完成' : '⚠ 定时任务完成（部分失败）',
+    `${options.taskName} · 共 ${total} 个账号：成功 ${options.success} / 失败 ${options.failed}`
+  )
 }

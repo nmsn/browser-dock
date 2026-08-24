@@ -20,7 +20,7 @@ import { acquireAccountLock, releaseAccountLock } from '../store/account-locks'
 import { createDiagnostic } from '../store/diagnostics'
 import { emitExecutionStatus, emitExecutionLog } from '../execution-events'
 import { registerCancellable, unregisterCancellable } from '../cancel-registry'
-import { notifyExecutionResult } from '../notifier'
+import { notifyExecutionResult, notifyExecutionStart } from '../notifier'
 import { NetworkCaptureService } from '../automation/network-capture'
 import type { CdpClient } from '../chrome/cdp-client'
 import { getFeature, type FeatureContext, type FeatureRunResult } from '../automation/features/registry'
@@ -44,6 +44,9 @@ import { getFeature, type FeatureContext, type FeatureRunResult } from '../autom
 export interface ExecuteOptions {
   signal?: AbortSignal
   onStateChange?: (status: ExecutionStatus) => void
+  /** 执行来源：定时调度时发送开始通知并回填 schedule_id */
+  source?: 'schedule' | 'manual' | 'inspection'
+  scheduleId?: string
 }
 
 interface ExecutionRecord extends ExecutionLog {
@@ -63,6 +66,7 @@ export async function executeTask(
   // 创建执行日志
   const execution = dbCreateLog({
     id: executionId,
+    scheduleId: options.scheduleId,
     taskId: task.id,
     accountId: account.id,
     status: 'queued',
@@ -103,6 +107,10 @@ export async function executeTask(
 
   try {
     record('starting', 'Starting task')
+    // 定时调度触发的执行发送开始通知（手动/巡检不发，避免刷屏）
+    if (options.source === 'schedule') {
+      notifyExecutionStart(execution as ExecutionLog, { taskName: task.name, accountName: account.name })
+    }
     record('launching-browser', 'Launching Chrome')
 
     await startChromeForAccount(account)

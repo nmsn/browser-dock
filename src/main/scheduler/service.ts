@@ -6,6 +6,7 @@ import { getAccount } from '../store/accounts'
 import { executeTask } from './task-executor'
 import { dispatchSchedule as runBatch, runWithConcurrency } from './task-runner'
 import { startSchedule, stopSchedule, stopAllSchedules } from './cron-scheduler'
+import { notifyExecutionSummary } from '../notifier'
 
 /**
  * 调度服务：关联 DB、cron 调度器与任务执行引擎
@@ -98,14 +99,19 @@ async function handleCronTriggered(scheduleId: string): Promise<void> {
   const startedAt = new Date().toISOString()
   updateSchedule(scheduleId, { lastRunAt: startedAt })
 
+  let successCount = 0
+  let failedCount = 0
+
   await runBatch(
     schedule,
     accounts,
     async (account) => {
       // 每个账号独立执行，失败不阻塞其他账号（5.3 单账号失败规则）
       try {
-        await executeTask(account, task)
+        await executeTask(account, task, { source: 'schedule', scheduleId })
+        successCount += 1
       } catch (err) {
+        failedCount += 1
         logger.error(
           { accountId: account.id, taskId: task.id, scheduleId, err },
           'Scheduled task execution failed for account'
@@ -118,6 +124,9 @@ async function handleCronTriggered(scheduleId: string): Promise<void> {
     lastRunAt: startedAt,
     nextRunAt: new Date().toISOString()
   })
+
+  // 批次汇总通知（全部账号结束后一条）
+  notifyExecutionSummary({ taskName: task.name, success: successCount, failed: failedCount })
 }
 
 /**
@@ -139,7 +148,7 @@ export async function runTaskNow(taskId: string, accountIds: string[], maxConcur
     maxConcurrency,
     async (account) => {
       try {
-        await executeTask(account, task)
+        await executeTask(account, task, { source: 'manual' })
       } catch (err) {
         logger.error({ accountId: account.id, taskId, err }, 'Manual task execution failed')
       }
