@@ -403,6 +403,8 @@ export interface AppSettings {
   launchAtLogin: boolean
   /** 关闭窗口时最小化到系统托盘（文档 10.3） */
   closeToTray: boolean
+  /** 浏览器窗口屏幕外启动，不抢占桌面焦点（自动化不受影响） */
+  launchBrowserHidden: boolean
   /** 低频巡检：每日检查已登录账号中控台页面可用性（文档 11.2） */
   enableInspection: boolean
 }

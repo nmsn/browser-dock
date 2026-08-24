@@ -23,6 +23,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   notifyOnExecution: true,
   launchAtLogin: false,
   closeToTray: false,
+  launchBrowserHidden: false,
   enableInspection: false
 }
 
@@ -67,6 +68,9 @@ export function normalizeSettingsPatch(patch: UpdateSettingsInput): UpdateSettin
   }
   if (patch.closeToTray !== undefined) {
     normalized.closeToTray = Boolean(patch.closeToTray)
+  }
+  if (patch.launchBrowserHidden !== undefined) {
+    normalized.launchBrowserHidden = Boolean(patch.launchBrowserHidden)
   }
   if (patch.enableInspection !== undefined) {
     normalized.enableInspection = Boolean(patch.enableInspection)

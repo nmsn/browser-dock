@@ -82,19 +82,25 @@ export async function startChromeForAccount(account: Account): Promise<ChromeIns
   // - disable-background-timer-throttling：后台 tab 定时器不降频
   // - disable-backgrounding-occluded-windows：窗口被遮挡时不挂起 renderer（Windows 关键）
   // - disable-renderer-backgrounding：不降级后台 renderer 进程优先级
-  const child = spawn(
-    chromePath,
-    [
-      `--remote-debugging-port=${debugPort}`,
-      `--user-data-dir=${profilePath}`,
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--disable-background-timer-throttling',
-      '--disable-backgrounding-occluded-windows',
-      '--disable-renderer-backgrounding'
-    ],
-    { stdio: ['ignore', 'pipe', 'pipe'] }
-  )
+  // 后台节流防护（文档 10.3 / 5.1）：
+  // - disable-background-timer-throttling：后台 tab 定时器不降频
+  // - disable-backgrounding-occluded-windows：窗口被遮挡时不挂起 renderer（Windows 关键）
+  // - disable-renderer-backgrounding：不降级后台 renderer 进程优先级
+  // launchBrowserHidden：屏幕外启动，不抢占桌面焦点（不算遮挡，自动化不受影响）
+  const chromeArgs = [
+    `--remote-debugging-port=${debugPort}`,
+    `--user-data-dir=${profilePath}`,
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--disable-background-timer-throttling',
+    '--disable-backgrounding-occluded-windows',
+    '--disable-renderer-backgrounding'
+  ]
+  if (getSettings().launchBrowserHidden) {
+    chromeArgs.push('--window-position=-32000,-32000')
+  }
+
+  const child = spawn(chromePath, chromeArgs, { stdio: ['ignore', 'pipe', 'pipe'] })
 
   // 收集 Chrome 输出用于诊断（6.3 异常清理）
   let chromeOut = ''

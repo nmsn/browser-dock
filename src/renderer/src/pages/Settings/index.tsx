@@ -221,6 +221,7 @@ export default function SettingsPage() {
       notifyOnExecution: Boolean(draft.notifyOnExecution),
       launchAtLogin: Boolean(draft.launchAtLogin),
       closeToTray: Boolean(draft.closeToTray),
+      launchBrowserHidden: Boolean(draft.launchBrowserHidden),
       enableInspection: Boolean(draft.enableInspection)
     })
   }
@@ -326,6 +327,12 @@ export default function SettingsPage() {
             description="点击关闭按钮时隐藏窗口到系统托盘，任务继续执行；从托盘菜单退出"
             checked={Boolean(draft.closeToTray)}
             onCheckedChange={(v) => setDraft((d) => ({ ...d, closeToTray: v }))}
+          />
+          <SwitchField
+            label="浏览器窗口后台启动"
+            description="自动化使用的 Chrome 窗口在屏幕外启动，不抢占桌面焦点；执行不受影响"
+            checked={Boolean(draft.launchBrowserHidden)}
+            onCheckedChange={(v) => setDraft((d) => ({ ...d, launchBrowserHidden: v }))}
           />
           <SwitchField
             label="低频巡检"
