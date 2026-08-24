@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, RefreshCw, FileCode2, Play } from 'lucide-react'
+import { Plus, Trash2, RefreshCw, FileCode2, Play, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -327,6 +327,90 @@ function DeleteTaskDialog({ taskId, taskName }: { taskId: string; taskName: stri
   )
 }
 
+function TaskDetailDialog({ task }: { task: import('../../../../shared/types').Task }) {
+  const [open, setOpen] = useState(false)
+  const isFeature = task.type === 'feature'
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button variant="ghost" size="icon" title="查看参数" />}>
+        <Eye className="h-4 w-4" />
+      </DialogTrigger>
+      <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{task.name}</DialogTitle>
+          <DialogDescription className="flex items-center gap-2">
+            <Badge variant="secondary">{typeMap[task.type]?.label ?? task.type}</Badge>
+            {isFeature && task.featureId && <span className="font-mono text-xs">{task.featureId}</span>}
+            <Badge variant="outline">v{task.version}</Badge>
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2 text-sm">
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span className="text-muted-foreground">超时：</span>
+              {Math.round(task.timeoutMs / 1000)}s
+            </div>
+            <div>
+              <span className="text-muted-foreground">更新：</span>
+              {new Date(task.updatedAt).toLocaleString('zh-CN')}
+            </div>
+          </div>
+          {isFeature ? (
+            <div className="space-y-2">
+              <p className="font-medium">功能参数</p>
+              {task.payload && Object.keys(task.payload).length > 0 ? (
+                <pre className="rounded-md bg-muted p-3 font-mono text-xs break-all whitespace-pre-wrap">
+                  {JSON.stringify(task.payload, null, 2)}
+                </pre>
+              ) : (
+                <p className="text-xs text-muted-foreground">无参数</p>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <p className="font-medium">脚本内容</p>
+                <pre className="max-h-64 overflow-auto rounded-md bg-muted p-3 font-mono text-xs whitespace-pre-wrap break-all">
+                  {task.script || '(空)'}
+                </pre>
+              </div>
+              {task.allowedApis && task.allowedApis.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="font-medium text-xs">允许的 API</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {task.allowedApis.map((api) => (
+                      <Badge key={api} variant="outline" className="font-mono text-[10px]">
+                        {api}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {task.config && Object.keys(task.config).length > 0 && (
+                <div className="space-y-2">
+                  <p className="font-medium text-xs">配置</p>
+                  <pre className="rounded-md bg-muted p-3 font-mono text-xs break-all whitespace-pre-wrap">
+                    {JSON.stringify(task.config, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </>
+          )}
+          <div className="space-y-1 text-xs">
+            <p>
+              <span className="text-muted-foreground">重试策略：</span>
+              {task.retryPolicy.maxAttempts} 次 / {task.retryPolicy.backoffMs}ms 退避
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" />}>关闭</DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 function RunTaskDialog({ taskId, taskName }: { taskId: string; taskName: string }) {
   const accounts = useAccountsStore((s) => s.accounts)
   const [open, setOpen] = useState(false)
@@ -488,6 +572,7 @@ export default function TasksPage() {
                     <TableCell>{new Date(task.updatedAt).toLocaleString('zh-CN')}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <TaskDetailDialog task={task} />
                         <RunTaskDialog taskId={task.id} taskName={task.name} />
                         <DeleteTaskDialog taskId={task.id} taskName={task.name} />
                       </div>
