@@ -1,0 +1,21 @@
+src/main/chrome/manager.ts
+  s_b7df082f1a3b8f::t_4efc5b4433cdc1 81-84,92-94
+docs/project-architecture-design.md
+  s_b7df082f1a3b8f::t_a9ceb120dfacbd 1094
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "cf1481a0fc84432aff7065445d0d93f8254a05e3",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
