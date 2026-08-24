@@ -395,8 +395,6 @@ export interface AppSettings {
   maxConcurrency: number
   /** 执行日志保留天数 */
   logRetentionDays: number
-  /** 截图 / DOM 快照保留天数（文档 9.3 默认 30 天） */
-  screenshotRetentionDays: number
   /** 任务结束时发送系统通知 */
   notifyOnExecution: boolean
   /** 开机自启动 */

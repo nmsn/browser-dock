@@ -19,7 +19,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   chromePath: '',
   maxConcurrency: 3,
   logRetentionDays: 30,
-  screenshotRetentionDays: 30,
   notifyOnExecution: true,
   launchAtLogin: false,
   closeToTray: false,
@@ -51,14 +50,6 @@ export function normalizeSettingsPatch(patch: UpdateSettingsInput): UpdateSettin
   }
   if (patch.logRetentionDays !== undefined) {
     normalized.logRetentionDays = clampInt(patch.logRetentionDays, 1, 365, DEFAULT_SETTINGS.logRetentionDays)
-  }
-  if (patch.screenshotRetentionDays !== undefined) {
-    normalized.screenshotRetentionDays = clampInt(
-      patch.screenshotRetentionDays,
-      1,
-      365,
-      DEFAULT_SETTINGS.screenshotRetentionDays
-    )
   }
   if (patch.notifyOnExecution !== undefined) {
     normalized.notifyOnExecution = Boolean(patch.notifyOnExecution)

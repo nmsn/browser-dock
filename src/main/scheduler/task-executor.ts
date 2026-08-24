@@ -479,9 +479,12 @@ async function savePageDiagnostic(
     const domHtml =
       domResult.status === 'fulfilled' ? String(domResult.value.result?.value ?? '').slice(0, 1_000_000) : ''
 
+    // 截图 / DOM 快照按日期目录存储（screenshots/YYYY-MM-DD/），开发者手动删除
+    const dayDir = join(SCREENSHOTS_PATH, new Date().toISOString().slice(0, 10))
+
     let domSnapshotPath: string | undefined
     if (domHtml) {
-      const dir = join(SCREENSHOTS_PATH, 'dom')
+      const dir = join(dayDir, 'dom')
       mkdirSync(dir, { recursive: true })
       const file = join(dir, `${executionId}.html`)
       writeFileSync(file, domHtml, 'utf-8')
@@ -490,7 +493,8 @@ async function savePageDiagnostic(
 
     let screenshotPath: string | undefined
     if (screenshotResult.status === 'fulfilled' && screenshotResult.value.data) {
-      const file = join(SCREENSHOTS_PATH, `${executionId}.png`)
+      mkdirSync(dayDir, { recursive: true })
+      const file = join(dayDir, `${executionId}.png`)
       writeFileSync(file, Buffer.from(screenshotResult.value.data, 'base64'))
       screenshotPath = file
     }

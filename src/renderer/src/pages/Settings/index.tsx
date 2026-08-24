@@ -217,7 +217,6 @@ export default function SettingsPage() {
       chromePath: String(draft.chromePath ?? ''),
       maxConcurrency: Number(draft.maxConcurrency),
       logRetentionDays: Number(draft.logRetentionDays),
-      screenshotRetentionDays: Number(draft.screenshotRetentionDays),
       notifyOnExecution: Boolean(draft.notifyOnExecution),
       launchAtLogin: Boolean(draft.launchAtLogin),
       closeToTray: Boolean(draft.closeToTray),
@@ -293,14 +292,9 @@ export default function SettingsPage() {
             max={365}
             onChange={(v) => setDraft((d) => ({ ...d, logRetentionDays: v }))}
           />
-          <NumberField
-            label="截图保留天数"
-            description="截图和 DOM 快照保留期限（1-365 天）"
-            value={Number(draft.screenshotRetentionDays)}
-            min={1}
-            max={365}
-            onChange={(v) => setDraft((d) => ({ ...d, screenshotRetentionDays: v }))}
-          />
+          <p className="text-xs text-muted-foreground">
+            截图 / DOM 快照 / 运行日志文件按日期目录存储，不自动清理，需手动删除
+          </p>
         </CardContent>
       </Card>
 

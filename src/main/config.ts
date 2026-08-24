@@ -26,7 +26,6 @@ export const PROXY_CONFIG_PATH = join(APP_DATA_PATH, 'proxy')
 export const DEFAULT_CONFIG = {
   maxConcurrency: 3,
   logRetentionDays: 30,
-  screenshotRetentionDays: 30,
   defaultTimeoutMs: 120000,
   defaultRetryPolicy: {
     maxAttempts: 3,
