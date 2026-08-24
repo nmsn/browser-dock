@@ -1,0 +1,23 @@
+src/main/scheduler/task-executor.ts
+  s_b7df082f1a3b8f::t_cfc198720d6189 208
+  s_b7df082f1a3b8f::t_d1917fbe7857bd 67-69
+  s_b7df082f1a3b8f::t_f1aad89f27d34b 516-561
+  s_b7df082f1a3b8f::t_e054ba045abe9e 94-110
+  s_b7df082f1a3b8f::t_0857bb9aadefe7 27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.24",
+  "base_commit_sha": "6dd081ea19628e746c9ba359a317721df690d92b",
+  "prompts": {},
+  "sessions": {
+    "s_b7df082f1a3b8f": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_fd3271f1affe8yKqLxLyjmikh7",
+        "model": "x-preview-f-free"
+      },
+      "human_author": "nmsn <136696700@qq.com>"
+    }
+  }
+}
