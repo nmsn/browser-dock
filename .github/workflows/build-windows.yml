@@ -28,17 +28,21 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
+        working-directory: apps/desktop
         run: pnpm typecheck
 
       - name: Build (electron-vite)
+        working-directory: apps/desktop
         run: pnpm build
 
       - name: Package (electron-builder nsis)
+        working-directory: apps/desktop
         run: pnpm exec electron-builder --win --publish never
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Verify native modules unpacked
+        working-directory: apps/desktop
         shell: pwsh
         run: |
           $asar = Get-ChildItem "dist/win-unpacked/resources/app.asar.unpacked/node_modules" -Recurse -Filter *.node | Select-Object -ExpandProperty FullName
@@ -50,6 +54,6 @@ jobs:
         with:
           name: browser-dock-win-x64-${{ github.sha }}
           path: |
-            dist/*.exe
-            dist/*.blockmap
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.blockmap
           if-no-files-found: error

@@ -17,11 +17,13 @@ coverage
 
 # Dependency directories
 node_modules/
-node_modules
 
-# Build output
+# Build output（未锚定：同时覆盖 src/main/automation/page-script/dist 生成物）
 dist/
 out/
+
+# ZCode 本地会话目录
+.zcode/
 
 # IDE
 .idea/
@@ -52,6 +54,3 @@ tmp/
 temp/
 *.tmp
 *.temp
-
-# Build artifacts
-build/

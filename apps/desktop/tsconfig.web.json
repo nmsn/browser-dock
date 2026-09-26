@@ -18,6 +18,6 @@
       "@/*": ["./src/renderer/src/*"]
     }
   },
-  "include": ["src/renderer/src/**/*", "shared/**/*", "src/preload/**/*.d.ts"],
+  "include": ["src/renderer/src/**/*", "src/preload/**/*.d.ts"],
   "exclude": ["node_modules", "out"]
 }
