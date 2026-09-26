@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: browser_dock
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d browser_dock']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build:
+      context: ..
+      dockerfile: apps/server/Dockerfile
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/browser_dock
+      PORT: 3100
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}
+      UPLOAD_DIR: /app/data/screenshots
+    ports:
+      - '3100:3100'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # 启动前应用迁移
+    command: sh -c "node apps/server/dist/db/migrate.js && node apps/server/dist/main.js"
+
+volumes:
+  pgdata:

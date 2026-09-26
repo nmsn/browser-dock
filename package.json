@@ -13,6 +13,12 @@
     "test:executor": "pnpm -C apps/desktop test:executor",
     "test:c48-fixture": "pnpm -C apps/desktop test:c48-fixture",
     "test:c32-fixture": "pnpm -C apps/desktop test:c32-fixture",
+    "dev:server": "pnpm -C apps/server dev",
+    "build:server": "pnpm -C apps/server build",
+    "typecheck:server": "pnpm -C apps/server typecheck",
+    "db:generate": "pnpm -C apps/server db:generate",
+    "db:migrate": "pnpm -C apps/server db:migrate",
+    "server:smoke": "node apps/server/scripts/smoke.mjs",
     "typecheck": "pnpm -C apps/desktop typecheck",
     "lint": "pnpm -C apps/desktop lint"
   }

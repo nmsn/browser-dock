@@ -1,0 +1,10 @@
+{
+  "name": "@browser-dock/shared",
+  "version": "0.0.1",
+  "private": true,
+  "description": "跨端共享契约类型（types-only；server 与 desktop 以 workspace:* 依赖，import type 编译期擦除）",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

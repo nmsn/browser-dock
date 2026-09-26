@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common'
+import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
 import { DeviceGuard, type DeviceRequest } from '../auth/device.guard'
 import { TaskService } from './task.service'
@@ -24,19 +24,19 @@ export class TaskController {
 
   @Post('claim')
   @ApiOperation({ summary: '批量认领（行级 CAS，同 deviceId 重领=自愈）' })
-  claim(@Body() dto: TaskClaimDto, request: DeviceRequest) {
+  claim(@Body() dto: TaskClaimDto, @Req() request: DeviceRequest) {
     return this.taskService.claim(dto, request.deviceId!)
   }
 
   @Post('report')
   @ApiOperation({ summary: '状态回写（终态 CAS；HOT_ITEM_TOP 失败自动重试 ≤3）' })
-  report(@Body() dto: TaskReportDto, request: DeviceRequest) {
+  report(@Body() dto: TaskReportDto, @Req() request: DeviceRequest) {
     return this.taskService.report(dto, request.deviceId!)
   }
 
   @Post('cancel')
   @ApiOperation({ summary: '显式取消回执（幂等，仅限本设备持有/未认领任务）' })
-  cancel(@Body() dto: TaskCancelDto, request: DeviceRequest) {
+  cancel(@Body() dto: TaskCancelDto, @Req() request: DeviceRequest) {
     return this.taskService.cancel(dto, request.deviceId!)
   }
 }

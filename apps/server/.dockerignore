@@ -1,0 +1,9 @@
+**
+!pnpm-workspace.yaml
+!pnpm-lock.yaml
+!package.json
+!apps/server
+!packages/shared
+apps/server/node_modules
+apps/server/dist
+packages/shared/node_modules

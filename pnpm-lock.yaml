@@ -193,6 +193,8 @@ importers:
         specifier: ^5.7.0
         version: 5.7.2
 
+  packages/shared: {}
+
 packages:
 
   '@angular-devkit/core@22.1.8':

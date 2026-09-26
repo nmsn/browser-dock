@@ -1,48 +1,36 @@
-import { BadRequestException, Body, Controller, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common'
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Post,
+  Req,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors
+} from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger'
-import { IsIn, IsOptional, IsString } from 'class-validator'
+import { IsString } from 'class-validator'
 import { mkdirSync, writeFileSync } from 'fs'
 import { join } from 'path'
+import { Inject } from '@nestjs/common'
 import { DeviceGuard, type DeviceRequest } from '../auth/device.guard'
 import { loadEnv } from '../config/env'
 import { DrizzleClient, type DrizzleDB } from '../db/drizzle.module'
 import { executionRecords } from '../db/schema'
-import { Inject } from '@nestjs/common'
 
-class ExecutionRecordDto {
+class ExecutionRecordBodyDto {
+  /** JSON 字符串：{ taobaoAccountId, planId?, configId?, configType?, status, failReason?, result? } */
   @IsString()
-  taobaoAccountId!: string
-
-  @IsOptional()
-  @IsString()
-  planId?: string
-
-  @IsOptional()
-  @IsString()
-  configId?: string
-
-  @IsOptional()
-  @IsString()
-  configType?: string
-
-  @IsIn(['DONE', 'FAILED', 'CANCELLED'])
-  status!: 'DONE' | 'FAILED' | 'CANCELLED'
-
-  @IsOptional()
-  @IsString()
-  failReason?: string
-
-  /** 结构化结果（steps 等），JSON 字符串 */
-  @IsOptional()
-  @IsString()
-  result?: string
+  record!: string
 }
 
+const RECORD_STATUSES = ['DONE', 'FAILED', 'CANCELLED']
+
 /**
- * 执行记录上传（multipart/form-data）
- * - record：JSON 字符串（必填）
- * - failureScreenshot：失败截图（可选，≤5MB，超限 400）
+ * 执行记录上传（multipart/form-data，对齐扩展 report-execution-record）
+ * - record：JSON 字符串（必填），含 taobaoAccountId/status 等全部字段
+ * - failureScreenshot：失败截图（可选，≤5MB，超限拒绝）
  */
 @ApiTags('rpa/execution-records')
 @ApiBearerAuth('device')
@@ -55,17 +43,26 @@ export class RecordsController {
   @UseInterceptors(FileInterceptor('failureScreenshot', { limits: { fileSize: 5 * 1024 * 1024 } }))
   @ApiOperation({ summary: '上传执行记录（含可选失败截图 ≤5MB）' })
   async upload(
-    @Body() dto: ExecutionRecordDto,
+    @Body() dto: ExecutionRecordBodyDto,
     @UploadedFile() screenshot: Express.Multer.File | undefined,
-    request: DeviceRequest
+    @Req() request: DeviceRequest
   ) {
-    let parsedResult: Record<string, unknown> | null = null
-    if (dto.result) {
-      try {
-        parsedResult = JSON.parse(dto.result) as Record<string, unknown>
-      } catch {
-        throw new BadRequestException('result 必须为合法 JSON 字符串')
-      }
+    let parsed: {
+      taobaoAccountId?: string
+      planId?: number | string
+      configId?: number | string
+      configType?: string
+      status?: string
+      failReason?: string
+      result?: unknown
+    }
+    try {
+      parsed = JSON.parse(dto.record)
+    } catch {
+      throw new BadRequestException('record 必须为合法 JSON 字符串')
+    }
+    if (!parsed.taobaoAccountId || !parsed.status || !RECORD_STATUSES.includes(parsed.status)) {
+      throw new BadRequestException('record.taobaoAccountId 与 record.status(DONE/FAILED/CANCELLED) 必填')
     }
 
     const env = loadEnv()
@@ -80,13 +77,13 @@ export class RecordsController {
       .insert(executionRecords)
       .values({
         deviceId: request.deviceId!,
-        taobaoAccountId: dto.taobaoAccountId,
-        planId: dto.planId ? Number(dto.planId) || null : null,
-        configId: dto.configId ? Number(dto.configId) || null : null,
-        configType: dto.configType ?? null,
-        status: dto.status,
-        result: parsedResult,
-        failReason: dto.failReason ?? null,
+        taobaoAccountId: parsed.taobaoAccountId,
+        planId: parsed.planId ? Number(parsed.planId) || null : null,
+        configId: parsed.configId ? Number(parsed.configId) || null : null,
+        configType: parsed.configType ?? null,
+        status: parsed.status,
+        result: (parsed.result as Record<string, unknown>) ?? null,
+        failReason: parsed.failReason ?? null,
         screenshotPath
       })
       .returning({ id: executionRecords.id })

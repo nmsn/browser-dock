@@ -1,4 +1,4 @@
-import { type CanActivate, type ExecutionContext, Injectable } from '@nestjs/common'
+import { type CanActivate, type ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common'
 import type { Request } from 'express'
 import { DeviceService } from './device.service'
 
@@ -19,10 +19,10 @@ export class DeviceGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<DeviceRequest>()
     const header = request.headers.authorization ?? ''
     const token = header.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : ''
-    if (!token) return false
+    if (!token) throw new UnauthorizedException('missing device token')
 
     const device = await this.deviceService.resolveByToken(token)
-    if (!device) return false
+    if (!device) throw new UnauthorizedException('invalid device token')
 
     request.deviceId = device.id
     return true
