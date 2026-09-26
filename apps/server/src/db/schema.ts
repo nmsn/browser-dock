@@ -115,7 +115,7 @@ export const planConfigs = pgTable('plan_configs', {
   id: serial('id').primaryKey(),
   planId: integer('plan_id')
     .notNull()
-    .references(() => plans.id),
+    .references(() => plans.id, { onDelete: 'cascade' }), // 管理端删计划级联删配置
   configType: configTypeEnum('config_type').notNull(), // ★ 阶段一仅 HOT_ITEM_TOP
   configData: jsonb('config_data').notNull(), // ★ HOT_ITEM_TOP：{ hotItemSlotIds: "id1\nid2\nid3" }
   configStatus: configStatusEnum('config_status').notNull().default('PENDING_PUSH'),
