@@ -9,3 +9,4 @@
   - 契约语义（claim 行级 CAS、report 终态 CAS、HOT_ITEM_TOP 服务端重试≤3、错误文案）照搬扩展 `docs/rpa-app-docs/12-场控自动化插件接口.md`。
   - 共享契约：里程碑②开工时抽 `packages/shared`（`@browser-dock/shared`，types-only，两端 `workspace:*` 依赖）。
 - 不兼容性：原 freelive-browser-extension 不能直连新 server（接受，插件退役）。
+- 实施规格：数据模型（Prisma schema 草案）与状态机、认证握手、接口语义要点、桌面端对接时序、实施顺序见 `apps/server/README.md`（里程碑②的实现基准文档）；接口层实时文档由 NestJS Swagger 承担。
