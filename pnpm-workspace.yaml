@@ -6,7 +6,7 @@ overrides:
   "@electron/get": "^5.1.0"
 
 allowBuilds:
+  '@scarf/scarf': false # @nestjs/cli 遥测脚本，显式拒绝
   better-sqlite3: true
   electron-winstaller: false
   esbuild: true
-
