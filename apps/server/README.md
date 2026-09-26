@@ -8,142 +8,135 @@
 
 ## 1. 技术栈与形态
 
-- NestJS **12**（^12，Node ≥20，仓库统一 Node 22）+ Prisma + PostgreSQL 16 + Swagger
+- NestJS **12**（^12，Node ≥20，仓库统一 Node 22）+ **Drizzle ORM** + PostgreSQL 16 + Swagger
+  - 迁移用 drizzle-kit（`drizzle-kit generate` / `migrate`）；NestJS 侧以自定义 Provider（`DrizzleClient`）注入 db 实例（drizzle-orm/postgres-js）
 - 端口 `3100`；`docker-compose.yml`：`app` + `postgres:16`；`.env`：`DATABASE_URL` / `JWT_SECRET` / `PORT`
 - 模块划分：`auth`（设备注册 + 管理端 JWT）、`rooms`、`plans`（含 configs）、`rpa`（task 四接口 + 执行记录）、`admin`（简化管理 REST）
 - 包名 `@browser-dock/server`；开工时同步抽取 `packages/shared`（`@browser-dock/shared`，types-only 契约 DTO/枚举，两端 `workspace:*`）
 
-## 2. 数据模型（Prisma schema 草案）
+## 2. 数据模型（Drizzle schema 草案）
 
 枚举保持与扩展契约逐字对齐（桌面端零适配）；标注 ★ 的是阶段一真正用到的子集。
 
-```prisma
+```ts
+// schema.ts（drizzle-orm/pg-core）
+import { boolean, integer, jsonb, pgEnum, pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core'
+
+// ── 枚举：与扩展 contract.ts 逐字对齐 ──────────────────────────
+export const planStatusEnum = pgEnum('plan_status', [
+  'PENDING_CREATE',   // ★ 可认领
+  'CREATING',
+  'CREATED',          // ★ 终态（= DONE；liveId 必填）
+  'CREATE_FAILED',    // ★ 终态
+  'CANCELLING',
+  'CANCELLED',        // ★ 终态
+])
+
+export const configTypeEnum = pgEnum('config_type', [
+  'HOT_ITEM_TOP',      // ★ 爆品置顶（阶段一）
+  'FAN_PACKET',        // 粉丝红包（自动重试集合成员，功能未迁移）
+  'SECKILL', 'SECKILL_PUSH', 'FLASH_DISCOUNT', 'COUPON',
+  'COMMENT_LUCKY_DRAW', 'SHARE_LUCKY_DRAW', 'PACKET_RAIN', 'FREE_LUCKY_DRAW',
+])
+
+export const configStatusEnum = pgEnum('config_status', [
+  'PENDING_PUSH',    // ★ 可认领 / 自动重试的重置目标
+  'PUSH_FAILED',
+  'IN_LINE',
+  'WAIT_EXECUTE',
+  'EXECUTING',       // ★ 认领后执行中（report 中间态，仅当前持有设备可写）
+  'DONE',            // ★ 终态
+  'FAILED',          // ★ 终态（重试耗尽或不可重试类型）
+  'CANCELLING',
+  'CANCELLED',       // ★ 终态
+  'CLOSED',
+])
+
 // ── 设备（认证主体）────────────────────────────────────────────
-model Device {
-  id            String    @id                  // deviceId：客户端生成的 UUID，持久化
-  tokenHash     String    @unique              // deviceToken 的 sha256（明文不落库）
-  name          String?                        // 设备别名（注册时可选）
-  lastSeenAt    DateTime?
-  createdAt     DateTime  @default(now())
-  records       ExecutionRecord[]
-}
+export const devices = pgTable('devices', {
+  id: text('id').primaryKey(),            // deviceId：客户端生成的 UUID，持久化
+  tokenHash: text('token_hash').notNull().unique(), // deviceToken 的 sha256（明文不落库）
+  name: text('name'),                     // 设备别名（注册时可选）
+  lastSeenAt: timestamp('last_seen_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
 
 // ── 直播间维护（原平台「直播间维护」概念）────────────────────
-model Room {
-  id              Int      @id @default(autoincrement())
-  taobaoAccountId String   @unique             // ★ 淘宝数字用户ID（userNumId），一对一绑定
-  roomName        String
-  note            String?
-  enabled         Boolean  @default(true)      // 停用后 task/list 不返回其计划
-  plans           Plan[]
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
+export const rooms = pgTable('rooms', {
+  id: serial('id').primaryKey(),
+  taobaoAccountId: text('taobao_account_id').notNull().unique(), // ★ 淘宝数字用户ID，一对一绑定
+  roomName: text('room_name').notNull(),
+  note: text('note'),
+  enabled: boolean('enabled').notNull().default(true), // 停用后 task/list 不返回其计划
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
 
 // ── 直播计划（LIVE_PLAN）─────────────────────────────────────
 // 状态机：PENDING_CREATE ──claim──▶ (执行) ──report──▶ CREATED（=终态，必须带 liveId）
 //         PENDING_CREATE ──report FAILED──▶ CREATE_FAILED（终态）
 //         任意 ──cancel──▶ CANCELLED（终态，仅限持有设备或未认领）
 // ★ claim 行级 CAS：仅 PENDING_CREATE 可认领；同 deviceId 重领 = 自愈（不改状态）。
-// ★ report 终态 CAS：终态（CREATED/CREATE_FAILED/CANCELLED）后的迟到写回直接忽略并记日志。
-model Plan {
-  id                  Int         @id @default(autoincrement())
-  room                Room        @relation(fields: [roomId], references: [id])
-  roomId              Int
-  planCode            String?                          // 管理端可填的业务编号
-  executionMode       String      @default("PLUGIN")   // ★ 只服务 PLUGIN；RPA 值保留枚举兼容
-  liveDate            String                           // yyyy-MM-dd
-  startTime           String?                         // HH:mm（展示用）
-  endTime             String?
-  liveId              String?                          // ★ 直播场次ID；report DONE 必回传
-  liveTitle           String?
-  planStatus          PlanStatus  @default(PENDING_CREATE)
-  scheduledTriggerTime DateTime?                      // ★ 非空才出现在 task/list
-  actualTriggerTime   DateTime?
-  pluginVersion       String?
-  claimDeviceId       String?                          // 认领排他 + 幽灵认领自愈依据
-  claimTime           DateTime?
-  executionResult     String?                          // ≤500 字
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-  configs             PlanConfig[]
-}
-
-enum PlanStatus {
-  PENDING_CREATE   // ★ 可认领
-  CREATING
-  CREATED          // ★ 终态（DONE；liveId 必填）
-  CREATE_FAILED    // ★ 终态
-  CANCELLING
-  CANCELLED        // ★ 终态
-}
+// ★ report 终态 CAS：终态后的迟到写回直接忽略并记日志。
+export const plans = pgTable('plans', {
+  id: serial('id').primaryKey(),
+  roomId: integer('room_id').notNull().references(() => rooms.id),
+  planCode: text('plan_code'),                          // 管理端可填的业务编号
+  executionMode: text('execution_mode').notNull().default('PLUGIN'), // ★ 只服务 PLUGIN
+  liveDate: text('live_date').notNull(),                // yyyy-MM-dd
+  startTime: text('start_time'),                        // HH:mm（展示用）
+  endTime: text('end_time'),
+  liveId: text('live_id'),                              // ★ 直播场次ID；report DONE 必回传
+  liveTitle: text('live_title'),
+  planStatus: planStatusEnum('plan_status').notNull().default('PENDING_CREATE'),
+  scheduledTriggerTime: timestamp('scheduled_trigger_time', { withTimezone: true }), // ★ 非空才出现在 task/list
+  actualTriggerTime: timestamp('actual_trigger_time', { withTimezone: true }),
+  pluginVersion: text('plugin_version'),
+  claimDeviceId: text('claim_device_id'),               // 认领排他 + 幽灵认领自愈依据
+  claimTime: timestamp('claim_time', { withTimezone: true }),
+  executionResult: text('execution_result'),            // ≤500 字
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
 
 // ── 任务配置（LIVE_PLAN_CONFIG，真正下发给桌面端执行的自动化）──
 // 状态机：PENDING_PUSH ──claim──▶ EXECUTING（report）──▶ DONE（终态）
 //         PENDING_PUSH ──claim──▶ EXECUTING ──report FAILED──▶
 //           configType ∈ 自动重试集合 && retryCount < 3 ──▶ 重置 PENDING_PUSH、retryCount+1
 //         否则 FAILED（终态，客户端不得重试）
-// ★ 与 Plan 相同的 claim 行级 CAS / 终态 CAS / cancel 规则。
-model PlanConfig {
-  id                   Int          @id @default(autoincrement())
-  plan                 Plan         @relation(fields: [planId], references: [id])
-  planId               Int
-  configType           ConfigType                        // ★ 阶段一仅 HOT_ITEM_TOP
-  configData           Json                              // ★ HOT_ITEM_TOP：{ hotItemSlotIds: "id1\nid2\nid3" }
-  configStatus         ConfigStatus @default(PENDING_PUSH)
-  retryCount           Int          @default(0)          // ★ 服务端自动重试计数（上限 3）
-  scheduledTriggerTime DateTime?                         // ★ 非空才可认领
-  actualTriggerTime    DateTime?
-  executionResult      String?                           // ≤500 字
-  failReason           String?                           // ≤500 字
-  returnTime           DateTime?                         // 终态回报时间
-  claimDeviceId        String?
-  claimTime            DateTime?
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
-}
-
-enum ConfigType {
-  HOT_ITEM_TOP      // ★ 爆品置顶（阶段一）
-  FAN_PACKET        // 粉丝红包（自动重试集合成员，功能未迁移）
-  SECKILL
-  SECKILL_PUSH
-  FLASH_DISCOUNT
-  COUPON
-  COMMENT_LUCKY_DRAW
-  SHARE_LUCKY_DRAW
-  PACKET_RAIN
-  FREE_LUCKY_DRAW
-}
-
-enum ConfigStatus {
-  PENDING_PUSH     // ★ 可认领 / 自动重试的重置目标
-  PUSH_FAILED
-  IN_LINE
-  WAIT_EXECUTE
-  EXECUTING        // ★ 认领后执行中（report 中间态，仅当前持有设备可写）
-  DONE             // ★ 终态
-  FAILED           // ★ 终态（重试耗尽或不可重试类型）
-  CANCELLING
-  CANCELLED        // ★ 终态
-  CLOSED
-}
+// ★ 与 plans 相同的 claim 行级 CAS / 终态 CAS / cancel 规则。
+export const planConfigs = pgTable('plan_configs', {
+  id: serial('id').primaryKey(),
+  planId: integer('plan_id').notNull().references(() => plans.id),
+  configType: configTypeEnum('config_type').notNull(),  // ★ 阶段一仅 HOT_ITEM_TOP
+  configData: jsonb('config_data').notNull(),           // ★ HOT_ITEM_TOP：{ hotItemSlotIds: "id1\nid2\nid3" }
+  configStatus: configStatusEnum('config_status').notNull().default('PENDING_PUSH'),
+  retryCount: integer('retry_count').notNull().default(0), // ★ 服务端自动重试计数（上限 3）
+  scheduledTriggerTime: timestamp('scheduled_trigger_time', { withTimezone: true }), // ★ 非空才可认领
+  actualTriggerTime: timestamp('actual_trigger_time', { withTimezone: true }),
+  executionResult: text('execution_result'),            // ≤500 字
+  failReason: text('fail_reason'),                      // ≤500 字
+  returnTime: timestamp('return_time', { withTimezone: true }), // 终态回报时间
+  claimDeviceId: text('claim_device_id'),
+  claimTime: timestamp('claim_time', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
 
 // ── 执行记录（失败截图 + 过程上报，对应看板）──────────────────
-model ExecutionRecord {
-  id             Int      @id @default(autoincrement())
-  device         Device   @relation(fields: [deviceId], references: [id])
-  deviceId       String
-  taobaoAccountId String
-  planId         Int?
-  configId       Int?
-  configType     String?
-  status         String                        // DONE / FAILED / CANCELLED
-  result         Json?                         // 结构化结果（steps 等）
-  failReason     String?
-  screenshotPath String?                       // 失败截图落盘路径（≤5MB）
-  createdAt      DateTime @default(now())
-}
+export const executionRecords = pgTable('execution_records', {
+  id: serial('id').primaryKey(),
+  deviceId: text('device_id').notNull().references(() => devices.id),
+  taobaoAccountId: text('taobao_account_id').notNull(),
+  planId: integer('plan_id'),
+  configId: integer('config_id'),
+  configType: text('config_type'),
+  status: text('status').notNull(),                     // DONE / FAILED / CANCELLED
+  result: jsonb('result'),                              // 结构化结果（steps 等）
+  failReason: text('fail_reason'),
+  screenshotPath: text('screenshot_path'),              // 失败截图落盘路径（≤5MB）
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
 ```
 
 **契约对齐说明**：扩展的 `isConfigClaimable` 判 `pluginStatusCode === 'WAIT_EXECUTE' || configStatus === 'PENDING_PUSH'`——本服务端只维护单一 `configStatus`，`task/list` 响应省略 `pluginStatusCode`，客户端走 PENDING_PUSH 回退分支即可，零适配。
@@ -218,7 +211,7 @@ HOT_ITEM_TOP 的 `configData.hotItemSlotIds` 录入校验：换行分隔、1–3
 
 ## 7. 实施顺序
 
-1. docker-compose（app + postgres）+ Prisma schema + 首次迁移
+1. docker-compose（app + postgres）+ Drizzle schema + `drizzle-kit generate` 首次迁移
 2. `auth`：设备注册 + JWT guard（先于一切接口）
 3. `admin`：rooms / plans / configs CRUD（有数据才能联调 RPA）
 4. `rpa`：task 四接口 + execution-records（状态机与 CAS 是重点，照本文第 2/4 节实现）
