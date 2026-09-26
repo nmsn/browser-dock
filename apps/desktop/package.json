@@ -18,6 +18,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "postinstall": "electron-builder install-app-deps",
     "test:c48-fixture": "node scripts/build-page-scripts.mjs && node scripts/test-c48-fixture.mjs",
+    "test:c32-fixture": "node scripts/build-page-scripts.mjs && node scripts/test-c32-fixture.mjs",
     "prebuild": "node scripts/build-page-scripts.mjs",
     "predev": "node scripts/build-page-scripts.mjs"
   },

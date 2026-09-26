@@ -181,6 +181,16 @@ export async function runC32PinHotProduct(
     steps.searchFilled = filled
     if (!filled) return fail('未找到或未能填写「按 ID 搜索」输入框', steps)
 
+    // 列表段诊断：按钮数量 / 行文本样本（真实站点排查「详情按钮未找到」用）
+    const listDiag = await callPage<string>(
+      `JSON.stringify({
+        btns: document.querySelectorAll('button[data-tblalog-id="zhiBoXiangQing"]').length,
+        rowText: (document.body.innerText || '').replace(/\\s+/g, ' ').slice(0, 160),
+        readyState: document.readyState
+      })`
+    )
+    logger.info('C32 list diagnostic after fill', { diag: listDiag })
+
     ensureLive(signal)
     const click = await callPage<C32PageResult>(
       `window.__BDC32.clickLiveDetail(${JSON.stringify(liveRoomId)})`

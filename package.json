@@ -12,6 +12,7 @@
     "test:chrome-cdp": "pnpm -C apps/desktop test:chrome-cdp",
     "test:executor": "pnpm -C apps/desktop test:executor",
     "test:c48-fixture": "pnpm -C apps/desktop test:c48-fixture",
+    "test:c32-fixture": "pnpm -C apps/desktop test:c32-fixture",
     "typecheck": "pnpm -C apps/desktop typecheck",
     "lint": "pnpm -C apps/desktop lint"
   }
