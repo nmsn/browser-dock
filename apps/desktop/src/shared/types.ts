@@ -41,6 +41,8 @@ export interface Account {
   name: string
   taobaoUsername: string
   profilePath: string
+  /** 淘宝数字用户 ID（userNumId，登录后经页面 mtop 响应捕获；server 直播间绑定用） */
+  userNumId?: string
   proxyConfig?: ProxyConfig
   notes: string
   createdAt: string
@@ -52,13 +54,16 @@ export interface Account {
 /**
  * 账号运行时状态
  * @see 文档 2.4 AccountRuntime / 6.1
+ *
+ * - 嵌入式（ADR-0001）：connected = 账号视图存在且 renderer 存活
+ * - 外部 Chrome（@deprecated 过渡期）：pid/debugPort 有值，connected = CDP 已连接
  */
 export interface AccountRuntime {
   accountId: string
   status: 'stopped' | 'starting' | 'running' | 'waiting-login' | 'error'
   pid?: number
   debugPort?: number
-  cdpConnected: boolean
+  connected: boolean
   currentUrl?: string
   startedAt?: string
   lastError?: string
@@ -160,6 +165,8 @@ export interface ExecutionBatch {
 export type ExecutionStatus =
   | 'queued'
   | 'starting'
+  | 'opening-view'
+  | 'connecting-page'
   | 'launching-browser'
   | 'connecting-cdp'
   | 'checking-login'
@@ -447,13 +454,18 @@ export interface DockAPI {
   accountsUpdate: (id: string, patch: Partial<Omit<Account, 'id' | 'createdAt'>>) => Promise<Account | null>
   accountsDelete: (id: string) => Promise<boolean>
 
-  // 浏览器 / Profile 生命周期（文档 6.2 / 6.3）
+  // 浏览器 / Profile 生命周期（文档 6.2 / 6.3）【@deprecated 外部 Chrome 过渡路径，c48 专用】
   browserStart: (accountId: string) => Promise<AccountRuntime>
   browserStop: (accountId: string) => Promise<boolean>
   browserGetRuntime: (accountId: string) => Promise<AccountRuntime | null>
   browserListRuntimes: () => Promise<AccountRuntime[]>
 
-  // 淘宝登录流程（文档 2.6.1）
+  // 嵌入式账号（ADR-0001：离屏执行视图 + 同分区登录窗）
+  windowClose: (accountId: string) => Promise<boolean>
+  windowGetRuntime: (accountId: string) => Promise<AccountRuntime | null>
+  windowListRuntimes: () => Promise<AccountRuntime[]>
+
+  // 淘宝登录流程（文档 2.6.1；嵌入式窗口内完成）
   loginStart: (accountId: string) => Promise<{ started: boolean }>
   loginWaitResult: (accountId: string, timeoutMs?: number) => Promise<{ loggedIn: boolean }>
 

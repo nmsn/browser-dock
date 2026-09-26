@@ -1,28 +1,26 @@
 import { create } from 'zustand'
-import type { Account, AccountRuntime, CreateAccountInput } from '../../../shared/types'
+import type { Account, CreateAccountInput } from '../../../shared/types'
 
 /**
  * 账号管理状态（renderer）
+ *
+ * 嵌入式架构（ADR-0001）：执行用离屏视图（无可见窗口），登录通过同分区登录窗扫码；
+ * 登录态持久化在分区会话中，执行不依赖任何可见窗口。
  */
 
 interface AccountsState {
   accounts: Account[]
-  runtimes: Record<string, AccountRuntime>
   loading: boolean
   error: string | null
 
   load: () => Promise<void>
   createAccount: (input: CreateAccountInput) => Promise<Account | null>
   deleteAccount: (id: string) => Promise<boolean>
-  startBrowser: (id: string) => Promise<boolean>
-  stopBrowser: (id: string) => Promise<boolean>
   startLogin: (id: string) => Promise<boolean>
-  refreshRuntimes: () => Promise<void>
 }
 
 export const useAccountsStore = create<AccountsState>((set, get) => ({
   accounts: [],
-  runtimes: {},
   loading: false,
   error: null,
 
@@ -31,7 +29,6 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
     try {
       const list = await window.dock.accountsList()
       set({ accounts: list, loading: false })
-      await get().refreshRuntimes()
     } catch (err) {
       set({ error: (err as Error).message, loading: false })
     }
@@ -53,8 +50,7 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
       const ok = await window.dock.accountsDelete(id)
       if (ok) {
         set((state) => ({
-          accounts: state.accounts.filter((a) => a.id !== id),
-          runtimes: { ...state.runtimes, [id]: undefined } as Record<string, AccountRuntime>
+          accounts: state.accounts.filter((a) => a.id !== id)
         }))
       }
       return ok
@@ -64,52 +60,22 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
     }
   },
 
-  startBrowser: async (id) => {
-    try {
-      const runtime = await window.dock.browserStart(id)
-      set((state) => ({ runtimes: { ...state.runtimes, [id]: runtime } }))
-      const account = get().accounts.find((a) => a.id === id)
-      if (account) await window.dock.loginStart(id)
-      return true
-    } catch (err) {
-      set({ error: (err as Error).message })
-      return false
-    }
-  },
-
-  stopBrowser: async (id) => {
-    try {
-      await window.dock.browserStop(id)
-      set((state) => {
-        const next = { ...state.runtimes }
-        delete next[id]
-        return { runtimes: next }
-      })
-      return true
-    } catch (err) {
-      set({ error: (err as Error).message })
-      return false
-    }
-  },
-
+  /**
+   * 登录：打开同分区登录窗并导航到淘宝登录页；后台等待扫码结果（最长 5 分钟），
+   * 完成后自动刷新账号列表（登录状态 / 淘宝账号ID）。
+   */
   startLogin: async (id) => {
     try {
       await window.dock.loginStart(id)
+      void window.dock
+        .loginWaitResult(id, 300_000)
+        .finally(() => {
+          void get().load()
+        })
       return true
     } catch (err) {
       set({ error: (err as Error).message })
       return false
-    }
-  },
-
-  refreshRuntimes: async () => {
-    try {
-      const runtimes = await window.dock.browserListRuntimes()
-      const map: Record<string, AccountRuntime> = {}
-      for (const r of runtimes) map[r.accountId] = r
-      set({ runtimes: map })
-    } catch (err) {
-      set({ error: (err as Error).message })
     }
   }
 }))

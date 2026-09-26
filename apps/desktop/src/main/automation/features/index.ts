@@ -4,6 +4,14 @@
  */
 
 import './c48-coupon-send'
+import './c32-hot-product-pin'
 
 export { getFeature, listFeatures, registerFeature } from './registry'
-export type { FeatureContext, FeatureRunResult, TaobaoFeature } from './registry'
+export type {
+  EmbeddedFeatureContext,
+  ExternalFeatureContext,
+  FeatureContext,
+  FeatureRuntime,
+  FeatureRunResult,
+  TaobaoFeature
+} from './registry'

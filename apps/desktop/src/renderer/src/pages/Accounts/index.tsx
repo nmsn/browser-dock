@@ -28,8 +28,8 @@ import type { LoginStatus } from '../../../../shared/types'
 
 /**
  * 账号管理页面
- * @see 文档 2.3.1 账号管理
- * 创建账号 / 启动关闭 Profile / 手动登录 / 检查登录态 / 删除账号
+ * @see 文档 2.3.1 账号管理 / docs/adr/0001
+ * 创建账号 / 打开关闭内嵌账号窗口 / 窗口内扫码登录 / 删除账号
  */
 
 const loginStatusMap: Record<LoginStatus, { label: string; variant: 'success' | 'warning' | 'destructive' | 'secondary' }> = {
@@ -70,7 +70,7 @@ function CreateAccountDialog() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>创建账号</DialogTitle>
-          <DialogDescription>创建后将生成独立的 Chrome Profile 目录</DialogDescription>
+          <DialogDescription>创建后将生成独立登录会话（分区），扫码一次长期有效</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
@@ -145,28 +145,13 @@ function DeleteAccountDialog({ accountId, accountName }: { accountId: string; ac
 }
 
 export default function AccountsPage() {
-  const { accounts, runtimes, loading, error, load, startBrowser, stopBrowser, startLogin } =
-    useAccountsStore()
+  const { accounts, loading, error, load, startLogin } = useAccountsStore()
 
   const [busy, setBusy] = useState<string | null>(null)
 
   useEffect(() => {
     load()
   }, [load])
-
-  const isRunning = (accountId: string) => runtimes[accountId]?.status === 'running'
-
-  const handleStart = async (id: string) => {
-    setBusy(id)
-    await startBrowser(id)
-    setBusy(null)
-  }
-
-  const handleStop = async (id: string) => {
-    setBusy(id)
-    await stopBrowser(id)
-    setBusy(null)
-  }
 
   const handleLogin = async (id: string) => {
     setBusy(id)
@@ -217,7 +202,6 @@ export default function AccountsPage() {
                   <TableHead>别名</TableHead>
                   <TableHead>淘宝用户名</TableHead>
                   <TableHead>登录状态</TableHead>
-                  <TableHead>浏览器</TableHead>
                   <TableHead>最后登录</TableHead>
                   <TableHead className="text-right">操作</TableHead>
                 </TableRow>
@@ -225,51 +209,29 @@ export default function AccountsPage() {
               <TableBody>
                 {accounts.map((account) => {
                   const status = loginStatusMap[account.loginStatus] ?? loginStatusMap.unknown
-                  const running = isRunning(account.id)
                   const isBusy = busy === account.id
                   return (
                     <TableRow key={account.id}>
                       <TableCell className="font-medium">{account.name}</TableCell>
-                      <TableCell>{account.taobaoUsername}</TableCell>
                       <TableCell>
-                        <Badge variant={status.variant}>{status.label}</Badge>
+                        <div>{account.taobaoUsername}</div>
+                        {account.userNumId && (
+                          <div className="text-xs text-muted-foreground">ID: {account.userNumId}</div>
+                        )}
                       </TableCell>
                       <TableCell>
-                        {running ? (
-                          <Badge variant="success">运行中</Badge>
-                        ) : (
-                          <Badge variant="secondary">已停止</Badge>
-                        )}
+                        <Badge variant={status.variant}>{status.label}</Badge>
                       </TableCell>
                       <TableCell>{account.lastLoginAt ? new Date(account.lastLoginAt).toLocaleString('zh-CN') : '—'}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
-                          {running ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleStop(account.id)}
-                              disabled={isBusy}
-                            >
-                              {isBusy ? '处理中...' : '停止'}
-                            </Button>
-                          ) : (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleStart(account.id)}
-                              disabled={isBusy}
-                            >
-                              {isBusy ? '处理中...' : '启动'}
-                            </Button>
-                          )}
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleLogin(account.id)}
                             disabled={isBusy}
                           >
-                            {isBusy ? '处理中...' : '登录'}
+                            {isBusy ? '处理中...' : account.loginStatus === 'logged-in' ? '重新登录' : '登录'}
                           </Button>
                           <DeleteAccountDialog accountId={account.id} accountName={account.name} />
                         </div>

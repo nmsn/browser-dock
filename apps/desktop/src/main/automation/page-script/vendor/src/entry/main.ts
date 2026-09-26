@@ -3,7 +3,8 @@
  * @see docs/c48-integration-plan.md A3
  *
  * 由 scripts/build-page-scripts.mjs 用 esbuild 打包为 IIFE，
- * 产物经 Runtime.evaluate 注入页面世界（幂等），暴露 window.__BD / window.__BDC48。
+ * 产物经 PageAdapter.evaluate 注入页面世界（幂等），
+ * 暴露 window.__BD / window.__BDC48（C48 优惠券，外部 Chrome 过渡期）/ window.__BDC32（C32 爆品置顶）。
  */
 
 import {
@@ -38,6 +39,7 @@ import {
   selectCouponByName,
   type CapturedCouponRow,
 } from '../platforms/taobao/features/c48-coupon-send/dom/fill-coupon-dialog';
+import * as c32 from '../platforms/taobao/features/c32-hot-product-pin/page-api';
 
 interface BdLib {
   version: number
@@ -68,6 +70,19 @@ declare global {
       pushCouponAndCloseDialog: typeof pushCouponAndCloseDialog
       closeCouponShellDialog: typeof closeCouponShellDialog
       probeCouponRowsText: () => string[]
+    }
+    __BDC32?: {
+      drainLogs: typeof c32.drainLogs
+      ensureListReady: typeof c32.ensureListReady
+      fillLiveListSearch: typeof c32.fillLiveListSearch
+      clickLiveDetail: typeof c32.clickLiveDetail
+      probeDetailStatus: typeof c32.probeDetailStatus
+      waitPocketUiReady: typeof c32.waitPocketUiReady
+      pinProductById: typeof c32.pinProductById
+      clearSearch: typeof c32.clearSearch
+      refillSearch: typeof c32.refillSearch
+      resetListFilters: typeof c32.resetListFilters
+      probeAlive: typeof c32.probeAlive
     }
   }
 }
@@ -117,6 +132,20 @@ window.__BDC48 = {
   pushCouponAndCloseDialog,
   closeCouponShellDialog,
   probeCouponRowsText
+}
+
+window.__BDC32 = {
+  drainLogs: c32.drainLogs,
+  ensureListReady: c32.ensureListReady,
+  fillLiveListSearch: c32.fillLiveListSearch,
+  clickLiveDetail: c32.clickLiveDetail,
+  probeDetailStatus: c32.probeDetailStatus,
+  waitPocketUiReady: c32.waitPocketUiReady,
+  pinProductById: c32.pinProductById,
+  clearSearch: c32.clearSearch,
+  refillSearch: c32.refillSearch,
+  resetListFilters: c32.resetListFilters,
+  probeAlive: c32.probeAlive
 }
 
 export { WaitTimeout }

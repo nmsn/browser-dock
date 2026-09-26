@@ -37,6 +37,8 @@ import type { ExecutionStatus, PageDiagnostic, ExecutionLog, RunLogEntry, StateT
 const statusMap: Record<ExecutionStatus, { label: string; variant: 'success' | 'warning' | 'destructive' | 'secondary' | 'default' }> = {
   queued: { label: '队列中', variant: 'secondary' },
   starting: { label: '启动中', variant: 'secondary' },
+  'opening-view': { label: '打开账号窗口', variant: 'secondary' },
+  'connecting-page': { label: '连接页面', variant: 'secondary' },
   'launching-browser': { label: '启动浏览器', variant: 'secondary' },
   'connecting-cdp': { label: '连接 CDP', variant: 'secondary' },
   'checking-login': { label: '检查登录', variant: 'secondary' },

@@ -5,6 +5,8 @@ import type { PageAdapter } from '../../../shared/types'
  * 页面适配器（基于 CDP）
  * @see 文档 7.2 PageAdapter
  *
+ * @deprecated 外部 Chrome 执行宿主的适配器实现（过渡期保留，见 docs/adr/0005）。
+ * 嵌入式基座使用 ElectronPageAdapter（electron-page-adapter.ts）。
  * 职责：将 PageAdapter 的高级 API 翻译为 CDP 命令
  */
 

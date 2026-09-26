@@ -11,6 +11,7 @@ interface AccountRow {
   name: string
   taobao_username: string | null
   profile_path: string
+  user_num_id: string | null
   proxy_config: string | null
   notes: string | null
   created_at: string
@@ -25,6 +26,7 @@ function rowToAccount(row: AccountRow): Account {
     name: row.name,
     taobaoUsername: row.taobao_username ?? '',
     profilePath: row.profile_path,
+    userNumId: row.user_num_id ?? undefined,
     proxyConfig: row.proxy_config ? (JSON.parse(row.proxy_config) as ProxyConfig) : undefined,
     notes: row.notes ?? '',
     createdAt: row.created_at,
@@ -53,14 +55,15 @@ export function createAccount(account: Omit<Account, 'createdAt' | 'loginStatus'
   const full: Account = { ...account, createdAt: now, loginStatus: 'unknown' }
   getDatabase()
     .prepare(
-      `INSERT INTO accounts (id, name, taobao_username, profile_path, proxy_config, notes, created_at, login_status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO accounts (id, name, taobao_username, profile_path, user_num_id, proxy_config, notes, created_at, login_status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       full.id,
       full.name,
       full.taobaoUsername,
       full.profilePath,
+      full.userNumId ?? null,
       full.proxyConfig ? JSON.stringify(full.proxyConfig) : null,
       full.notes,
       full.createdAt,
@@ -76,7 +79,7 @@ export function updateAccount(id: string, patch: Partial<Account>): Account | nu
   getDatabase()
     .prepare(
       `UPDATE accounts SET
-        name = ?, taobao_username = ?, profile_path = ?, proxy_config = ?,
+        name = ?, taobao_username = ?, profile_path = ?, user_num_id = ?, proxy_config = ?,
         notes = ?, last_login_at = ?, login_status = ?, last_login_check_at = ?
        WHERE id = ?`
     )
@@ -84,6 +87,7 @@ export function updateAccount(id: string, patch: Partial<Account>): Account | nu
       merged.name,
       merged.taobaoUsername,
       merged.profilePath,
+      merged.userNumId ?? null,
       merged.proxyConfig ? JSON.stringify(merged.proxyConfig) : null,
       merged.notes,
       merged.lastLoginAt ?? null,

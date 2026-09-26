@@ -31,11 +31,16 @@ const api: DockAPI = {
     ipcRenderer.invoke('accounts:update', id, patch),
   accountsDelete: (id: string) => ipcRenderer.invoke('accounts:delete', id),
 
-  // 浏览器 / Profile 生命周期
+  // 浏览器 / Profile 生命周期【@deprecated 外部 Chrome 过渡路径，c48 专用】
   browserStart: (accountId: string) => ipcRenderer.invoke('browser:start', accountId),
   browserStop: (accountId: string) => ipcRenderer.invoke('browser:stop', accountId),
   browserGetRuntime: (accountId: string) => ipcRenderer.invoke('browser:get-runtime', accountId),
   browserListRuntimes: () => ipcRenderer.invoke('browser:list-runtimes'),
+
+  // 嵌入式账号（ADR-0001）
+  windowClose: (accountId: string) => ipcRenderer.invoke('window:close', accountId),
+  windowGetRuntime: (accountId: string) => ipcRenderer.invoke('window:get-runtime', accountId),
+  windowListRuntimes: () => ipcRenderer.invoke('window:list-runtimes'),
 
   // 淘宝登录流程
   loginStart: (accountId: string) => ipcRenderer.invoke('login:start', accountId),

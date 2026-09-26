@@ -2,8 +2,10 @@ import type { CdpClient } from '../../chrome/cdp-client'
 import logger from '../../logger'
 
 /**
- * 淘宝账号登录流程
+ * 淘宝账号登录流程（外部 Chrome 版）
  * @see 文档 2.6.1 账号登录流程 / 6.2 启动流程
+ *
+ * @deprecated 外部 Chrome 过渡路径（ADR-0005）；嵌入式登录见 login-embedded.ts。
  *
  * 流程：
  * 1. 创建独立 Chrome 实例（独立 --user-data-dir）

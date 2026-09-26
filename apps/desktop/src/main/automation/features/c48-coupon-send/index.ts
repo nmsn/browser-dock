@@ -2,7 +2,12 @@ import type { FeatureFieldOption } from '../../../../shared/types'
 import { evaluateOnPage, injectPageScript } from '../../page-script'
 import { buildLiveDetailUrl } from '../../taobao/live-detail-url'
 import { FrameSession } from '../../../chrome/cdp-client'
-import { registerFeature, type FeatureContext, type FeatureRunResult } from '../registry'
+import {
+  registerFeature,
+  type ExternalFeatureContext,
+  type FeatureContext,
+  type FeatureRunResult
+} from '../registry'
 import {
   C48_CLAIM_CONDITION_TREE,
   C48_DEFAULT_CLAIM_CONDITION_PATH,
@@ -16,6 +21,8 @@ import { extractCouponRows, type CapturedCouponRow } from './coupon-list'
  * C48 优惠券发放
  * @see docs/c48-integration-plan.md Phase D / 参考项目 features/c48-coupon-send
  *
+ * 【@deprecated 外部 Chrome 过渡路径（ADR-0005）】c48 依赖 CDP per-frame 会话
+ * （跨域 coupon iframe / smf OOIF），嵌入式等价方案未验证前保持外部 Chrome 执行。
  * 七段流程：导航详情 → 开弹窗(顶层) → 自有权益(coupon iframe)
  *   → 选券(同域或 smf iframe，支持按 ID 网络捕获匹配) → 确认+领取条件+渠道不限
  *   → 投放+二次确认 → 关壳弹窗(顶层)
@@ -49,7 +56,7 @@ interface StepFlags {
 }
 
 async function runC48CouponSend(
-  ctx: FeatureContext,
+  ctx: ExternalFeatureContext,
   payload: Record<string, unknown>
 ): Promise<FeatureRunResult> {
   const liveRoomId = asString(payload.liveRoomId)
@@ -187,7 +194,7 @@ async function runC48CouponSend(
 
 /** 等待页面主 target 导航完成且落在 liveplatform 域 */
 async function waitMainPageReady(
-  ctx: FeatureContext
+  ctx: ExternalFeatureContext
 ): Promise<{ ok: true } | { ok: false; detail: string }> {
   const start = Date.now()
   while (Date.now() - start < PAGE_READY_TIMEOUT_MS) {
@@ -210,7 +217,7 @@ async function waitMainPageReady(
 
 /** 按 URL 模式依序等待子会话附着 */
 async function waitForFrameSession(
-  ctx: FeatureContext,
+  ctx: ExternalFeatureContext,
   patterns: string[]
 ): Promise<FrameSession> {
   let lastErr: Error | null = null
@@ -226,7 +233,7 @@ async function waitForFrameSession(
   )
 }
 
-async function enableFrameNetwork(ctx: FeatureContext, session: FrameSession): Promise<void> {
+async function enableFrameNetwork(ctx: ExternalFeatureContext, session: FrameSession): Promise<void> {
   if (!ctx.network.hasEnabled(session.sessionId)) {
     await ctx.network.enable(ctx.cdp, session.sessionId)
   }
@@ -234,7 +241,7 @@ async function enableFrameNetwork(ctx: FeatureContext, session: FrameSession): P
 
 /** 等待券列表接口响应并抽取行；超时不致命（回退名称/顺序定位失败信息） */
 async function safeWaitCouponRows(
-  ctx: FeatureContext,
+  ctx: ExternalFeatureContext,
   couponId: string,
   timeoutMs = 15_000
 ): Promise<CapturedCouponRow[]> {
@@ -254,7 +261,8 @@ async function safeWaitCouponRows(
 
 registerFeature({
   id: 'c48CouponSend',
-  label: 'C48 优惠券发放',
+  label: 'C48 优惠券发放（外部 Chrome）',
+  runtime: 'external-chrome',
   fields: [
     {
       key: 'liveRoomId',
@@ -285,5 +293,6 @@ registerFeature({
       help: '默认「不限」；投放渠道将自动设为不限'
     }
   ],
-  run: runC48CouponSend
+  run: (ctx: FeatureContext, payload: Record<string, unknown>) =>
+    runC48CouponSend(ctx as ExternalFeatureContext, payload)
 })

@@ -1,3 +1,4 @@
+import { powerSaveBlocker } from 'electron'
 import { runInNewContext } from 'vm'
 import { writeFileSync, mkdirSync } from 'fs'
 import { join } from 'path'
@@ -6,14 +7,18 @@ import type {
   AutomationContext,
   ExecutionLog,
   ExecutionStatus,
+  PageAdapter,
   ScriptApi,
   StateTransition,
   Task
 } from '../../shared/types'
 import logger from '../logger'
 import { SCREENSHOTS_PATH } from '../config'
-import { startChromeForAccount, stopChromeForAccount, getRuntime } from '../chrome/manager'
+import { startChromeForAccount, stopChromeForAccount, getRuntime as getChromeRuntime } from '../chrome/manager'
 import { createPageCdpClient } from '../chrome/cdp-client'
+import { ensureAccountView, getAccountView, waitForWindowOpenUrl, type AccountViewEntry } from '../window/manager'
+import { ElectronPageAdapter } from '../automation/runtime/electron-page-adapter'
+import { ElectronNetworkAdapter } from '../automation/runtime/electron-network-adapter'
 import { buildAutomationContext } from '../automation/runtime/automation-context'
 import { createExecutionLog as dbCreateLog, updateExecutionLog as dbUpdateLog, appendStateTransition as dbAppendTransition } from '../store/logs'
 import { acquireAccountLock, releaseAccountLock } from '../store/account-locks'
@@ -23,23 +28,31 @@ import { registerCancellable, unregisterCancellable } from '../cancel-registry'
 import { notifyExecutionResult, notifyExecutionStart } from '../notifier'
 import { NetworkCaptureService } from '../automation/network-capture'
 import type { CdpClient } from '../chrome/cdp-client'
-import { getFeature, type FeatureContext, type FeatureRunResult } from '../automation/features/registry'
+import {
+  getFeature,
+  type EmbeddedFeatureContext,
+  type ExternalFeatureContext,
+  type FeatureRunResult
+} from '../automation/features'
 import { getSettings } from '../store/settings'
 
 /**
  * 任务执行器
  * @see 文档 8.2 错误处理策略 / 8.3 重试原则 / 9.2 脚本权限边界
+ * @see docs/adr/0001-embedded-electron-execution-host.md
+ *
+ * 双轨执行宿主（按 feature.runtime 分派）：
+ * - embedded（默认基座）：嵌入式账号视图（BaseWindow + WebContentsView），
+ *   视图跨执行持久（登录态在分区会话里），执行期 powerSaveBlocker 防系统休眠，
+ *   backgroundThrottling:false 保证隐藏窗口全速运行。
+ * - external-chrome（@deprecated 过渡期，仅 c48）：启动外部 Chrome + CDP，
+ *   执行完关闭实例（旧行为不变）。
  *
  * 流程（文档 6.2 / 2.6.2）：
- * 1. 获取账号互斥锁
- * 2. 启动 Chrome 实例
- * 3. 连接页面 CDP
- * 4. 构造 AutomationContext
- * 5. 在受限沙箱中执行用户脚本
- * 6. 更新执行日志状态
- * 7. 关闭 Chrome，释放锁
- *
- * 脚本权限（9.2）：仅暴露白名单 API，禁止访问 Node/fs/SQLite/密钥环/其他账号
+ * 1. 获取全局并发槽位 + 账号互斥锁
+ * 2. 打开执行宿主（账号视图 / Chrome）
+ * 3. 构造执行上下文（feature 直编 / vm 沙箱脚本）
+ * 4. 更新执行日志状态，收尾释放（视图保留、Chrome 关闭、锁释放）
  */
 
 export interface ExecuteOptions {
@@ -55,7 +68,7 @@ interface ExecutionRecord extends ExecutionLog {
 }
 
 /**
- * 执行单个任务（含浏览器的完整生命周期）
+ * 执行单个任务（含执行宿主的完整生命周期）
  */
 export async function executeTask(
   account: Account,
@@ -96,7 +109,7 @@ export async function executeTask(
   options.signal?.addEventListener('abort', () => abortController.abort(options.signal?.reason))
   registerCancellable(executionId, abortController)
 
-  // 全局并发闸门：跨调度/手动/巡检统一限制 Chrome 实例总数；
+  // 全局并发闸门：跨调度/手动/巡检统一限制同时执行的账号数；
   // 排队时间不计入任务超时（timeout 在获得槽位后起算）
   try {
     await acquireGlobalSlot(abortController.signal)
@@ -119,7 +132,21 @@ export async function executeTask(
   const timeoutMs = task.timeoutMs ?? 120_000
   const timeoutId = setTimeout(() => abortController.abort('timeout'), timeoutMs)
 
+  // 执行宿主分派：feature.runtime 标注执行宿主；custom 脚本走嵌入式基座
+  const feature = task.type === 'feature' && task.featureId ? getFeature(task.featureId) : null
+  if (task.type === 'feature' && !feature) {
+    const err = new Error(`TK_FEATURE_NOT_FOUND: ${task.featureId ?? '(no featureId)'}`)
+    record('failed', err.message)
+    releaseGlobalSlot()
+    slotAcquired = false
+    unregisterCancellable(executionId)
+    releaseAccountLock(account.id)
+    throw err
+  }
+  const useEmbedded = task.type === 'custom' || feature!.runtime === 'embedded'
+
   let cdp: Awaited<ReturnType<typeof createPageCdpClient>> | null = null
+  let powerSaveId = -1
 
   try {
     record('starting', 'Starting task')
@@ -127,22 +154,70 @@ export async function executeTask(
     if (options.source === 'schedule') {
       notifyExecutionStart(execution as ExecutionLog, { taskName: task.name, accountName: account.name })
     }
-    record('launching-browser', 'Launching Chrome')
 
-    await startChromeForAccount(account)
-    const runtime = getRuntime(account.id)
-    if (!runtime?.debugPort) throw new Error('CDP_CONNECT_FAILED: no debug port')
+    if (useEmbedded) {
+      // ============ 嵌入式执行宿主（ADR-0001，新基座）============
+      record('opening-view', 'Opening account view')
+      const entry = ensureAccountView(account)
+      // 执行期防系统休眠（配合视图 backgroundThrottling:false）
+      powerSaveId = powerSaveBlocker.start('prevent-app-suspension')
 
-    record('connecting-cdp', 'Connecting to CDP')
-    cdp = await createPageCdpClient(runtime.debugPort)
+      record('connecting-page', 'Preparing account page')
+      const page = new ElectronPageAdapter(entry.view.webContents)
 
-    // 初始化页面域
-    await cdp.send('Page.enable')
-    await cdp.send('Runtime.enable')
+      if (task.type === 'feature') {
+        record('running', `Running feature ${task.featureId ?? ''}`)
+        const featureResult = await runFeatureTaskEmbedded(task, {
+          page,
+          entry,
+          executionId,
+          signal: abortController.signal,
+          timeoutMs,
+          onAttemptFail: (attempt, message) => record('retrying', `Attempt ${attempt} failed: ${message}`)
+        })
+        execution.result = { featureId: task.featureId, ...featureResult }
+        dbUpdateLog(executionId, { result: execution.result })
+        emitExecutionLog(execution as ExecutionLog)
+        // 业务失败（ok:false）不重试、直接走失败路径，避免副作用段重复执行
+        if (!featureResult.ok) {
+          throw new Error(featureResult.detail || `feature ${task.featureId ?? ''} failed`)
+        }
+      } else {
+        record('running', 'Running user script')
+        const network = new ElectronNetworkAdapter(entry.view.webContents)
+        network.connect()
+        const context = buildAutomationContext(account, { page, network }, taskLogger(executionId), abortController.signal)
 
-    if (task.type === 'feature') {
+        // 受限沙箱执行（9.2 脚本权限边界），带有限重试（8.3 重试原则）
+        await runWithRetry(
+          () => runScript(task.script, context, timeoutMs, task.allowedApis),
+          task.retryPolicy?.maxAttempts ?? 1,
+          task.retryPolicy?.backoffMs ?? 5000,
+          {
+            signal: abortController.signal,
+            onRetry: (attempt, err) => {
+              record('retrying', `Attempt ${attempt} failed: ${err instanceof Error ? err.message : String(err)}`)
+            }
+          }
+        )
+      }
+    } else {
+      // ============ 外部 Chrome 执行宿主（@deprecated 过渡期，仅 c48）============
+      record('launching-browser', 'Launching Chrome')
+
+      await startChromeForAccount(account)
+      const runtime = getChromeRuntime(account.id)
+      if (!runtime?.debugPort) throw new Error('CDP_CONNECT_FAILED: no debug port')
+
+      record('connecting-cdp', 'Connecting to CDP')
+      cdp = await createPageCdpClient(runtime.debugPort)
+
+      // 初始化页面域
+      await cdp.send('Page.enable')
+      await cdp.send('Runtime.enable')
+
       record('running', `Running feature ${task.featureId ?? ''}`)
-      const featureResult = await runFeatureTask(task, {
+      const featureResult = await runFeatureTaskExternal(task, {
         cdp,
         executionId,
         signal: abortController.signal,
@@ -152,26 +227,9 @@ export async function executeTask(
       execution.result = { featureId: task.featureId, ...featureResult }
       dbUpdateLog(executionId, { result: execution.result })
       emitExecutionLog(execution as ExecutionLog)
-      // 业务失败（ok:false）不重试、直接走失败路径，避免副作用段重复执行
       if (!featureResult.ok) {
         throw new Error(featureResult.detail || `feature ${task.featureId ?? ''} failed`)
       }
-    } else {
-      record('running', 'Running user script')
-      const context = buildAutomationContext(account, cdp, taskLogger(executionId), abortController.signal)
-
-      // 受限沙箱执行（9.2 脚本权限边界），带有限重试（8.3 重试原则）
-      await runWithRetry(
-        () => runScript(task.script, context, timeoutMs, task.allowedApis),
-        task.retryPolicy?.maxAttempts ?? 1,
-        task.retryPolicy?.backoffMs ?? 5000,
-        {
-          signal: abortController.signal,
-          onRetry: (attempt, err) => {
-            record('retrying', `Attempt ${attempt} failed: ${err instanceof Error ? err.message : String(err)}`)
-          }
-        }
-      )
     }
 
     execution.duration = Date.now() - startTime
@@ -199,18 +257,34 @@ export async function executeTask(
 
     // 保存诊断信息（11.2 页面变更检测）
     if (err instanceof Error && err.message.startsWith('PG_SELECTOR_NOT_FOUND')) {
-      await savePageDiagnostic(cdp, executionId)
+      if (useEmbedded) {
+        const entry = getAccountView(account.id)
+        if (entry) {
+          await savePageDiagnosticEmbedded(new ElectronPageAdapter(entry.view.webContents), executionId)
+        }
+      } else {
+        await savePageDiagnostic(cdp, executionId)
+      }
     }
     throw err
   } finally {
     clearTimeout(timeoutId)
     unregisterCancellable(executionId)
     if (slotAcquired) releaseGlobalSlot()
-    // 关闭浏览器，释放锁（6.3 关闭和异常清理）
-    try {
-      await stopChromeForAccount(account.id)
-    } catch (err) {
-      logger.warn({ err, accountId: account.id }, 'Error stopping Chrome')
+    if (powerSaveId >= 0) {
+      try {
+        powerSaveBlocker.stop(powerSaveId)
+      } catch {
+        // 已停止时忽略
+      }
+    }
+    // 收尾释放：嵌入式视图跨执行持久（登录态在分区会话），仅外部 Chrome 路径关闭实例
+    if (!useEmbedded) {
+      try {
+        await stopChromeForAccount(account.id)
+      } catch (err) {
+        logger.warn({ err, accountId: account.id }, 'Error stopping Chrome')
+      }
     }
     releaseAccountLock(account.id)
     dbUpdateLog(executionId, { duration: execution.duration })
@@ -220,11 +294,50 @@ export async function executeTask(
 }
 
 /**
- * 内置功能任务执行（docs/c48-integration-plan.md Phase C）
+ * 内置功能任务执行——嵌入式宿主（docs/adr/0001）
  * 主进程直接编排（不经 vm 沙箱）；重试仅针对抛出的基础设施异常，
  * 业务失败（ok:false）由调用方直接判失败，避免副作用段重复执行。
  */
-async function runFeatureTask(
+async function runFeatureTaskEmbedded(
+  task: Task,
+  deps: {
+    page: PageAdapter
+    entry: AccountViewEntry
+    executionId: string
+    signal: AbortSignal
+    timeoutMs: number
+    onAttemptFail: (attempt: number, message: string) => void
+  }
+): Promise<FeatureRunResult> {
+  const feature = task.featureId ? getFeature(task.featureId) : null
+  if (!feature) {
+    throw new Error(`TK_FEATURE_NOT_FOUND: ${task.featureId ?? '(no featureId)'}`)
+  }
+
+  const ctx: EmbeddedFeatureContext = {
+    page: deps.page,
+    waitForWindowOpenUrl: (timeoutMs?: number) => waitForWindowOpenUrl(deps.entry, timeoutMs),
+    logger: taskLogger(deps.executionId),
+    signal: deps.signal
+  }
+
+  return runWithRetry(
+    () => feature.run(ctx, task.payload ?? {}),
+    task.retryPolicy?.maxAttempts ?? 1,
+    task.retryPolicy?.backoffMs ?? 5000,
+    {
+      signal: deps.signal,
+      onRetry: (attempt, err) =>
+        deps.onAttemptFail(attempt, err instanceof Error ? err.message : String(err))
+    }
+  )
+}
+
+/**
+ * 内置功能任务执行——外部 Chrome 宿主（@deprecated 过渡期，仅 c48）
+ * docs/c48-integration-plan.md Phase C
+ */
+async function runFeatureTaskExternal(
   task: Task,
   deps: {
     cdp: CdpClient
@@ -245,7 +358,7 @@ async function runFeatureTask(
   // 跨域 iframe（coupon / smf）按需自动附着
   await deps.cdp.enableAutoAttach()
 
-  const ctx: FeatureContext = {
+  const ctx: ExternalFeatureContext = {
     cdp: deps.cdp,
     network,
     logger: taskLogger(deps.executionId),
@@ -353,7 +466,7 @@ function runScript(
  * 是否可重试的错误（8.3 只对明确可恢复的错误重试）
  * - 网络超时（NT_TIMEOUT）
  * - 选择器未找到（PG_SELECTOR_NOT_FOUND）
- * - CDP 连接失败（CDP_CONNECT_FAILED）
+ * - 页面/连接失败（PG_NAVIGATE_FAILED / CDP_CONNECT_FAILED）
  * 有副作用的操作（页面提交、发送消息）不由引擎自动重试，需脚本自查幂等性
  */
 function isRetryableError(err: unknown): boolean {
@@ -362,6 +475,7 @@ function isRetryableError(err: unknown): boolean {
   return (
     msg.includes('NT_TIMEOUT') ||
     msg.includes('PG_SELECTOR_NOT_FOUND') ||
+    msg.includes('PG_NAVIGATE_FAILED') ||
     msg.includes('CDP_CONNECT_FAILED') ||
     msg.includes('CDP_TIMEOUT') ||
     msg.includes('fetch failed') ||
@@ -447,10 +561,71 @@ function taskLogger(executionId: string) {
 }
 
 /**
- * 保存页面诊断信息（11.2 页面变更检测）
+ * 保存页面诊断信息（11.2 页面变更检测）——嵌入式宿主
  *
  * 采集：URL、title、DOM 快照（outerHTML）、截图、Console 错误
  * 保存到：screenshots/ + page_diagnostics 表
+ */
+async function savePageDiagnosticEmbedded(
+  page: PageAdapter,
+  executionId: string
+): Promise<void> {
+  try {
+    const [urlResult, titleResult, domResult, consoleResult, screenshotBase64] = await Promise.allSettled([
+      page.evaluate<string>('window.location.href'),
+      page.evaluate<string>('document.title'),
+      page.evaluate<string>('document.documentElement.outerHTML'),
+      page.evaluate<string[]>('window.__collectedConsoleErrors || []'),
+      page.screenshot(executionId)
+    ])
+
+    const url = urlResult.status === 'fulfilled' ? String(urlResult.value ?? '') : ''
+    const title = titleResult.status === 'fulfilled' ? String(titleResult.value ?? '') : ''
+    const domHtml =
+      domResult.status === 'fulfilled' ? String(domResult.value ?? '').slice(0, 1_000_000) : ''
+
+    // 截图 / DOM 快照按日期目录存储（screenshots/YYYY-MM-DD/），开发者手动删除
+    const dayDir = join(SCREENSHOTS_PATH, new Date().toISOString().slice(0, 10))
+
+    let domSnapshotPath: string | undefined
+    if (domHtml) {
+      const dir = join(dayDir, 'dom')
+      mkdirSync(dir, { recursive: true })
+      const file = join(dir, `${executionId}.html`)
+      writeFileSync(file, domHtml, 'utf-8')
+      domSnapshotPath = file
+    }
+
+    let screenshotPath: string | undefined
+    if (screenshotBase64.status === 'fulfilled' && screenshotBase64.value) {
+      mkdirSync(dayDir, { recursive: true })
+      const file = join(dayDir, `${executionId}.png`)
+      writeFileSync(file, Buffer.from(screenshotBase64.value, 'base64'))
+      screenshotPath = file
+    }
+
+    let consoleErrors: string[] | undefined
+    if (consoleResult.status === 'fulfilled' && Array.isArray(consoleResult.value)) {
+      consoleErrors = consoleResult.value
+    }
+
+    createDiagnostic({
+      executionId,
+      url,
+      title,
+      domSnapshotPath,
+      screenshotPath,
+      consoleErrors
+    })
+
+    logger.warn({ executionId, url, title }, 'Page diagnostic captured')
+  } catch (err) {
+    logger.warn({ executionId, err }, 'Failed to save page diagnostic')
+  }
+}
+
+/**
+ * 保存页面诊断信息（11.2）——外部 Chrome 宿主（@deprecated 过渡期，仅 c48）
  */
 async function savePageDiagnostic(
   cdp: Awaited<ReturnType<typeof createPageCdpClient>> | null,
@@ -522,7 +697,7 @@ async function savePageDiagnostic(
 // ============================================================================
 // 全局并发闸门（docs 计划 Phase I）
 // 容量 = settings.maxConcurrency，跨定时调度/手动/巡检统一限制同时执行的
-// Chrome 实例总数；动态容量（设置变更后对后续准入即时生效）
+// 账号数；动态容量（设置变更后对后续准入即时生效）
 // ============================================================================
 
 let activeSlots = 0

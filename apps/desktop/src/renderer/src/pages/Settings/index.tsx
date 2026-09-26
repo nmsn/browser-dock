@@ -22,7 +22,6 @@ import type { BackupInfo } from '../../../../shared/types'
  * @see 文档 2.3.1 设置 / 10.3 应用退出和系统能力
  *
  * 核心能力：
- * - Chrome 路径（留空自动检测）
  * - 全局并发上限
  * - 日志 / 截图保留天数
  * - 执行结果通知
@@ -214,13 +213,11 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     await update({
-      chromePath: String(draft.chromePath ?? ''),
       maxConcurrency: Number(draft.maxConcurrency),
       logRetentionDays: Number(draft.logRetentionDays),
       notifyOnExecution: Boolean(draft.notifyOnExecution),
       launchAtLogin: Boolean(draft.launchAtLogin),
       closeToTray: Boolean(draft.closeToTray),
-      launchBrowserHidden: Boolean(draft.launchBrowserHidden),
       enableInspection: Boolean(draft.enableInspection)
     })
   }
@@ -251,24 +248,6 @@ export default function SettingsPage() {
           <CardContent className="pt-4 text-sm text-destructive">{error}</CardContent>
         </Card>
       )}
-
-      <Card>
-        <CardHeader>
-          <CardTitle>浏览器</CardTitle>
-          <CardDescription>Chrome 可执行文件配置</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Label>Chrome 路径</Label>
-          <Input
-            placeholder="留空自动检测（/Applications/Google Chrome.app/...）"
-            value={String(draft.chromePath ?? '')}
-            onChange={(e) => setDraft((d) => ({ ...d, chromePath: e.target.value }))}
-          />
-          <p className="text-xs text-muted-foreground">
-            指定 Chrome 可执行文件完整路径；修改后新启动的浏览器实例生效
-          </p>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
@@ -321,12 +300,6 @@ export default function SettingsPage() {
             description="点击关闭按钮时隐藏窗口到系统托盘，任务继续执行；从托盘菜单退出"
             checked={Boolean(draft.closeToTray)}
             onCheckedChange={(v) => setDraft((d) => ({ ...d, closeToTray: v }))}
-          />
-          <SwitchField
-            label="浏览器窗口后台启动"
-            description="自动化使用的 Chrome 窗口在屏幕外启动，不抢占桌面焦点；执行不受影响"
-            checked={Boolean(draft.launchBrowserHidden)}
-            onCheckedChange={(v) => setDraft((d) => ({ ...d, launchBrowserHidden: v }))}
           />
           <SwitchField
             label="低频巡检"

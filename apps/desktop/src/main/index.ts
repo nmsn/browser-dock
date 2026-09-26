@@ -20,7 +20,23 @@ import { getTask } from './store/tasks'
 import { backupDatabase } from './store/backup'
 import { restoreDatabaseFromBackup } from './store/restore'
 import { runInspection } from './inspection'
+import { closeAllAccountViews, chromeLikeUserAgent } from './window/manager'
 import type { Account, Task } from '../shared/types'
+
+// ============================================================================
+// 后台节流防护（ADR-0001"不节流不冷冻"）——必须在 app ready 前设置：
+// - disable-background-timer-throttling：后台/隐藏页面定时器不降频
+// - disable-backgrounding-occluded-windows：窗口被遮挡时不挂起 renderer
+// - disable-renderer-backgrounding：不降级后台 renderer 进程优先级
+// 页面级再叠加 webPreferences.backgroundThrottling:false（window/manager.ts），
+// 执行期由 task-executor 叠加 powerSaveBlocker 防系统休眠。
+// ============================================================================
+app.commandLine.appendSwitch('disable-background-timer-throttling')
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows')
+app.commandLine.appendSwitch('disable-renderer-backgrounding')
+
+// UA 伪装为同版本真实 Chrome（ADR-0004 风控对策）；嵌入式分区会话另按会话设置
+app.userAgentFallback = chromeLikeUserAgent()
 
 let mainWindow: BrowserWindow | null = null
 let quitting = false
@@ -119,6 +135,20 @@ if (!gotTheLock) {
       runSmokeTest().finally(() => {
         app.exit(0)
       })
+      return
+    }
+
+    // C32 fixture 全链路验证模式（ADR-0006）：
+    // BROWSER_DOCK_C32_FIXTURE=1 + BROWSER_DOCK_FIXTURE_BASE=<本地 mock 页地址>
+    if (process.env['BROWSER_DOCK_C32_FIXTURE'] === '1') {
+      runC32FixtureTest()
+        .catch((err) => {
+          console.error('C32 fixture test threw:', err)
+          console.log(JSON.stringify({ pass: false }))
+        })
+        .finally(() => {
+          app.exit(0)
+        })
       return
     }
 
@@ -265,6 +295,60 @@ app.on('window-all-closed', () => {
   }
 })
 
+/**
+ * C32 fixture 全链路验证（ADR-0006，无登录态环境）：
+ * fixture 页由测试脚本起本地 HTTP 服务（BROWSER_DOCK_FIXTURE_BASE），
+ * 这里创建账号 + C32 任务并经嵌入式执行宿主真实跑一遍编排。
+ * 验证：账号视图 / page-script 注入 / 列表搜索→进详情→逐商品置顶 / 弹窗状态机 / 执行日志。
+ */
+async function runC32FixtureTest(): Promise<void> {
+  const result = { pass: false, detail: '' }
+  try {
+    const account: Account = {
+      id: `c32-fixture-account-${Date.now()}`,
+      name: 'C32 fixture 账号',
+      taobaoUsername: 'c32-fixture@test.local',
+      profilePath: join(app.getPath('userData'), `c32-fixture-profile-${Date.now()}`),
+      notes: '',
+      createdAt: new Date().toISOString(),
+      loginStatus: 'unknown'
+    }
+    dbCreateAccount(account)
+
+    const task: Task = {
+      id: `c32-fixture-task-${Date.now()}`,
+      name: 'C32 fixture 置顶任务',
+      type: 'feature',
+      script: '',
+      config: {},
+      featureId: 'c32HotProductPin',
+      payload: {
+        liveRoomId: String(process.env['C32_FIXTURE_ROOM_ID'] ?? '260000000000000'),
+        productIds: (process.env['C32_FIXTURE_PRODUCT_IDS'] ?? '8152947823').split(',').map((id) => id.trim()).filter(Boolean)
+      },
+      version: 1,
+      timeoutMs: 180_000,
+      retryPolicy: { maxAttempts: 1, backoffMs: 1000 },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    dbCreateTask(task)
+
+    const execution = await executeTask(account, task)
+    result.pass = execution.status === 'success'
+    result.detail = JSON.stringify({ status: execution.status, result: execution.result, error: execution.error })
+    console.log('=== C32 fixture test ===')
+    console.log(`status=${execution.status}`)
+    console.log(`result=${JSON.stringify(execution.result)}`)
+    if (execution.error) console.log(`error=${execution.error}`)
+  } catch (err) {
+    result.detail = err instanceof Error ? err.message : String(err)
+    console.error('C32 fixture test error:', result.detail)
+  }
+  console.log(result.pass ? 'PASS: c32 fixture test passed' : 'FAIL: c32 fixture test failed')
+  console.log(JSON.stringify({ pass: result.pass }))
+}
+
 // 优雅退出
 app.on('before-quit', () => {
   quitting = true
@@ -273,5 +357,6 @@ app.on('before-quit', () => {
   stopAllSchedules()
   stopRetentionCleanup()
   stopInspection()
+  closeAllAccountViews()
   closeDatabase()
 })

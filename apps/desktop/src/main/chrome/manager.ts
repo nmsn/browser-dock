@@ -12,7 +12,9 @@ import logger from '../logger'
  * Chrome 进程管理器
  * @see 文档 6.2 启动流程 / 6.3 关闭和异常清理
  *
- * 阶段：Phase 1 占位实现，Phase 2 从 Mirage Browser 复制完整实现
+ * @deprecated 外部 Chrome 执行宿主（过渡期保留，仅 c48 使用，见 docs/adr/0005）。
+ * 新功能一律走嵌入式账号视图（src/main/window/manager.ts，ADR-0001）；
+ * c48 迁移完成（跨域 frame 方案落地）后本模块与 cdp-client 一并删除。
  */
 
 interface ChromeInstance {
@@ -130,7 +132,7 @@ export async function startChromeForAccount(account: Account): Promise<ChromeIns
     status: 'starting',
     pid: child.pid,
     debugPort,
-    cdpConnected: false,
+    connected: false,
     startedAt: new Date().toISOString()
   }
 
@@ -147,7 +149,7 @@ export async function startChromeForAccount(account: Account): Promise<ChromeIns
   // 等待 CDP 可用
   await waitForCdpAvailable(debugPort)
   instance.cdp = await createCdpClient(runtime)
-  runtime.cdpConnected = true
+  runtime.connected = true
   runtime.status = 'running'
 
   return instance

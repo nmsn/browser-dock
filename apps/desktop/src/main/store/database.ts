@@ -211,6 +211,14 @@ const MIGRATIONS: Migration[] = [
       -- 废弃的旧任务类型迁移为 custom 手写脚本类型
       UPDATE tasks SET type = 'custom' WHERE type IN ('live-control', 'product');
     `
+  },
+  {
+    version: 5,
+    name: 'account_user_num_id',
+    sql: `
+      -- 淘宝数字用户 ID（登录后经页面 mtop 响应捕获；server 直播间绑定用）
+      ALTER TABLE accounts ADD COLUMN user_num_id TEXT;
+    `
   }
 ]
 

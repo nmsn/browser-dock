@@ -30,8 +30,12 @@ import { listBackups, backupDatabase } from './store/backup'
 import { restoreDatabaseFromBackup } from './store/restore'
 import { statSync } from 'fs'
 import { startChromeForAccount, stopChromeForAccount, getRuntime, listRuntimes } from './chrome/manager'
-import { createPageCdpClient } from './chrome/cdp-client'
-import { startLogin, waitForLoginComplete } from './automation/taobao/login'
+import {
+  closeAccountView,
+  getAccountRuntimeEmbedded,
+  listEmbeddedRuntimes
+} from './window/manager'
+import { startEmbeddedLogin, waitEmbeddedLoginResult } from './automation/taobao/login-embedded'
 import { registerSchedule, unregisterSchedule, runTaskNow, syncAllSchedules } from './scheduler/service'
 import { getNextRunTime } from './scheduler/cron-scheduler'
 import { cancelExecution } from './cancel-registry'
@@ -78,18 +82,6 @@ function normalizeAllowedApis(input: unknown): ScriptApi[] | undefined {
     'storage.delete'
   ])
   return input.filter((v): v is ScriptApi => typeof v === 'string' && known.has(v))
-}
-
-/**
- * 基于 Chrome 实例的调试端口启动登录流程
- */
-async function startLoginFromInstance(debugPort: number): Promise<void> {
-  const pageCdp = await createPageCdpClient(debugPort)
-  try {
-    await startLogin(pageCdp)
-  } finally {
-    pageCdp.disconnect()
-  }
 }
 
 export function registerIpcHandlers(): void {
@@ -147,7 +139,7 @@ export function registerIpcHandlers(): void {
     return deleted
   })
 
-  // ============ 浏览器 / 登录流程（文档 6.2 启动流程 / 2.6.1 登录流程）============
+  // ============ 浏览器生命周期【@deprecated 外部 Chrome 过渡路径，仅 c48 任务用】============
   ipcMain.handle('browser:start', async (_event, accountId: string) => {
     if (typeof accountId !== 'string' || !accountId) throw new Error('Account id is required')
     const account = dbListAccounts().find((a) => a.id === accountId)
@@ -169,42 +161,35 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('browser:list-runtimes', () => listRuntimes())
 
-  // 登录流程：打开淘宝登录页，等待用户手动完成登录
+  // ============ 嵌入式账号（ADR-0001：登录窗 / 离屏执行视图）============
+  // 关闭账号登录窗与离屏视图（登录态保留在分区会话）
+  ipcMain.handle('window:close', (_event, accountId: string) => {
+    if (typeof accountId !== 'string' || !accountId) throw new Error('Account id is required')
+    return closeAccountView(accountId)
+  })
+
+  ipcMain.handle('window:get-runtime', (_event, accountId: string) => {
+    if (typeof accountId !== 'string' || !accountId) throw new Error('Account id is required')
+    return getAccountRuntimeEmbedded(accountId)
+  })
+
+  ipcMain.handle('window:list-runtimes', () => listEmbeddedRuntimes())
+
+  // 登录流程（嵌入式）：打开同分区可见登录窗，等待用户手动扫码
   ipcMain.handle('login:start', async (_event, accountId: string) => {
     if (typeof accountId !== 'string' || !accountId) throw new Error('Account id is required')
     const account = dbListAccounts().find((a) => a.id === accountId)
     if (!account) throw new Error('ACCOUNT_NOT_FOUND')
 
-    const runtime = getRuntime(accountId)
-    if (!runtime?.debugPort) {
-      // 自动先启动浏览器
-      const instance = await startChromeForAccount(account)
-      await startLoginFromInstance(instance.debugPort)
-      return { started: true }
-    }
-    await startLoginFromInstance(runtime.debugPort)
+    await startEmbeddedLogin(account)
     return { started: true }
   })
 
   ipcMain.handle('login:wait-result', async (_event, accountId: string, timeoutMs?: number) => {
     if (typeof accountId !== 'string' || !accountId) throw new Error('Account id is required')
-    const runtime = getRuntime(accountId)
-    if (!runtime?.debugPort) throw new Error('BROWSER_NOT_RUNNING')
-    const pageCdp = await createPageCdpClient(runtime.debugPort)
-    try {
-      const loggedIn = await waitForLoginComplete(pageCdp, timeoutMs ?? 120_000)
-      if (loggedIn) {
-        // 更新数据库登录状态（2.6.1 第 6 步）
-        dbUpdateAccount(accountId, {
-          loginStatus: 'logged-in',
-          lastLoginAt: new Date().toISOString(),
-          lastLoginCheckAt: new Date().toISOString()
-        })
-      }
-      return { loggedIn }
-    } finally {
-      pageCdp.disconnect()
-    }
+    const account = dbListAccounts().find((a) => a.id === accountId)
+    if (!account) throw new Error('ACCOUNT_NOT_FOUND')
+    return waitEmbeddedLoginResult(account, timeoutMs ?? 300_000)
   })
 
   // ============ 任务管理（文档 2.3.1 / 13.1）============
